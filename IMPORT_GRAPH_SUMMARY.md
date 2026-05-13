@@ -2,9 +2,11 @@
 
 ## Core Dependency Nodes
 
-- content/site.ts — imported by app/layout.tsx, components/layout/Header.tsx, components/layout/Footer.tsx, components/marketing/Hero.tsx, components/marketing/LocationCard.tsx, components/marketing/PartnerStrip.tsx
-- app/globals.css — imported once by app/layout.tsx; defines all brand tokens consumed via Tailwind utility classes across every component
+- content/site.ts — imported by app/layout.tsx, components/layout/{Header,Footer}.tsx, components/marketing/*, app/weather/page.tsx
+- content/events.ts — imported by app/events/page.tsx, app/events/[slug]/page.tsx, components/events/EventCard.tsx
 - lib/mdx.ts — imported by both history routes (index + [slug])
+- lib/weather.ts — imported by app/weather/page.tsx and components/weather/WeatherWidget.tsx
+- app/globals.css — imported once by app/layout.tsx; defines brand tokens consumed via Tailwind utility classes across every component
 - components/brand/Logo.tsx — imported by Header and Hero
 - next-mdx-remote/rsc — sole MDX renderer; only consumer is app/history/[slug]/page.tsx
 
@@ -12,12 +14,22 @@
 
 - `@/*` (tsconfig.json) → repo root; used by every component/route import
 
+## Server-Only Boundaries
+
+- lib/weather.ts uses `import "server-only"` — must never be imported from a `"use client"` module
+- components/weather/WeatherWidget.tsx is a server component; safe consumer of lib/weather.ts
+
+## Client Components
+
+- components/layout/Header.tsx (`"use client"`) — holds the mobile menu state
+
 ## Potential Refactor Risk Areas
 
-- content/site.ts (high fan-in; any breaking shape change ripples through layout + marketing components)
+- content/site.ts (high fan-in; nav shape changes ripple into Header desktop + mobile branches)
+- content/events.ts (typed Event shape used by index, detail, card, and partition function — schema change touches 4 files)
 - app/globals.css (token names hard-coded into Tailwind class strings repo-wide; renaming a token requires text-wide updates)
-- lib/mdx.ts (single source of truth for content/history I/O; schema of HistoryFrontmatter is implicit contract with all .mdx files)
-- app/history/[slug]/page.tsx (couples MDX rendering, metadata, SSG params, and styling overrides in one file)
+- lib/weather.ts (single source of truth for OpenWeather mapping; CurrentWeather/ForecastSlot/DailyForecast shapes are consumed by both home widget and `/weather`)
+- app/history/[slug]/page.tsx (couples MDX rendering, metadata, SSG params, and typography overrides in one file)
 
 ## Notes
 

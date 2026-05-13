@@ -1,0 +1,82 @@
+# Rooted Legacy
+
+> Marketing and content site for an Indianapolis urban farm at 865 N German Church Rd — classes, events, history, and live weather.
+
+## Project Overview
+
+**Tech Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · MDX (next-mdx-remote) · lucide-react · OpenWeather API · Vercel hosting
+**Status:** Active development; v1 marketing surface deployed
+**Purpose:** Public-facing site for the farm and its partners (Bodi Buzz, Cre8tive Alignment Network). Single developer maintains.
+
+## Core Documentation
+
+- `README.md` — Setup and getting started
+- `FEATURE_SPEC.md` — Original feature breakdown (predates events/weather; some content overlaps with roadmap.md)
+- `CODE_MAP.md` — Feature-to-file map
+- `ENTRY_POINTS.md` — Where execution starts (npm scripts, routes)
+- `DATA_FLOW.md` — System-level data movement (renders, fetches, ISR)
+- `IMPORT_GRAPH_SUMMARY.md` — Core modules and refactor-risk areas
+- `FEATURE_BOUNDARIES.md` — Component responsibilities and isolation
+- `docs/ai/memory.md` — Project history and current state
+- `docs/ai/roadmap.md` — Forward-looking priorities
+- `docs/ai/tasks.md` — Active work
+- `docs/ai/decisions.md` — ADRs (stack, content strategy, weather provider, git workflow)
+- `docs/ai/architecture.md` — System design
+
+## Key Files by Area
+
+### Layout / Brand
+- `app/layout.tsx` — root HTML shell, fonts, viewport, header/footer
+- `components/layout/Header.tsx` — client component; mobile hamburger menu
+- `components/layout/Footer.tsx`
+- `components/brand/Logo.tsx`
+- `app/globals.css` — Tailwind v4 `@theme` block + brand CSS variables
+- `content/site.ts` — name, tagline, address, partners, nav (with `live` flag)
+
+### Home
+- `app/page.tsx`
+- `components/marketing/{Hero,WhatWeDo,LocationCard,PartnerStrip}.tsx`
+
+### Events
+- `app/events/page.tsx` — index, partitioned upcoming/past
+- `app/events/[slug]/page.tsx` — SSG detail page
+- `components/events/EventCard.tsx`
+- `content/events.ts` — typed `Event[]` + helpers (`partitionEvents`, `getEvent`, `formatEventDate`, `formatTimeRange`)
+
+### History
+- `app/history/page.tsx` — index
+- `app/history/[slug]/page.tsx` — MDX renderer with typography overrides
+- `lib/mdx.ts` — frontmatter parsing + slug listing
+- `content/history/*.mdx`
+
+### Weather
+- `app/weather/page.tsx` — current + hourly + 5-day; 30-min revalidate
+- `components/weather/WeatherWidget.tsx` — home page widget
+- `lib/weather.ts` — `server-only`; OpenWeather fetch + mapping
+
+## Common Tasks
+
+**To add a history article:** create `content/history/your-slug.mdx` with frontmatter (`title`, `date`, `excerpt`, optional `author`). It auto-appears on `/history` and at `/history/your-slug`.
+
+**To add an event:** append an `Event` object to `events` in `content/events.ts`. Include `slug`, `title`, `date` (ISO), optional `start`/`end`/`location`/`highlights`/`partners`/`flyer`/`donateUrl`/`externalUrl`. SSG params and partitioning happen automatically.
+
+**To change brand tokens:** edit the `:root` and `@theme inline` blocks in `app/globals.css`. Token names are referenced as Tailwind utilities repo-wide (`bg-bg`, `text-primary`, `border-line`, etc.) — rename via project-wide find/replace.
+
+**To run locally:** `npm install`, set `OPENWEATHER_API_KEY` in `.env.local`, then `npm run dev` (http://localhost:3000).
+
+**To deploy:** merge into `main`; Vercel auto-deploys. Env vars must be set in the Vercel project for production.
+
+## Environment Variables
+
+- `OPENWEATHER_API_KEY` — required for live weather; site shows "Not configured" placeholder when absent
+- `WEATHER_LAT` — optional override of farm latitude (default 39.7745)
+- `WEATHER_LON` — optional override of farm longitude (default -86.0103)
+- `WEATHER_UNITS` — optional, `"imperial"` (default) or `"metric"`
+
+`.env.local` is gitignored. `.env.example` is committed and documents these.
+
+## Git Workflow
+
+- `main` — production; auto-deploys to Vercel
+- `feat/*` — feature branches; open a PR into `main`
+- `develop` — stale; will be deleted or repurposed
