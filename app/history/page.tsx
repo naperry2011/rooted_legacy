@@ -11,12 +11,12 @@ export const metadata: Metadata = {
 export default async function HistoryIndex() {
   const articles = await listHistoryArticles();
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <header className="mb-12">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary-deep mb-3">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
+      <header className="mb-10 sm:mb-12">
+        <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-primary-deep mb-3">
           Our story
         </p>
-        <h1 className="font-display text-5xl text-primary">History</h1>
+        <h1 className="font-display text-4xl sm:text-5xl text-primary">History</h1>
         <p className="mt-4 text-ink-muted">
           Stories of the land, the people, and the practices behind Rooted
           Legacy.

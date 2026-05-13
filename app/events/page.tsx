@@ -12,12 +12,12 @@ export default function EventsPage() {
   const { upcoming, past } = partitionEvents();
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <header className="mb-12">
-        <p className="text-xs uppercase tracking-[0.3em] text-primary-deep mb-3">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
+      <header className="mb-10 sm:mb-12">
+        <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-primary-deep mb-3">
           On the farm
         </p>
-        <h1 className="font-display text-5xl text-primary">Events</h1>
+        <h1 className="font-display text-4xl sm:text-5xl text-primary">Events</h1>
         <p className="mt-4 text-ink-muted max-w-2xl">
           Free and low-cost classes, wellness pop-ups, and community gatherings
           at the farm and with our partners.

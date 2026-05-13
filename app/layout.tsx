@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
@@ -34,6 +34,12 @@ export const metadata: Metadata = {
     type: "website",
   },
   icons: { icon: "/brand/rooted_legacy_logo.jpg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0b0b0a",
 };
 
 export default function RootLayout({

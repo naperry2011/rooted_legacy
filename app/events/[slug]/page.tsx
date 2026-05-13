@@ -47,7 +47,7 @@ export default async function EventDetailPage({
   const mapsHref = `https://www.google.com/maps?q=${encodeURIComponent(event.location)}`;
 
   return (
-    <article className="mx-auto max-w-4xl px-6 py-16">
+    <article className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
       <Link
         href="/events"
         className="text-sm text-ink-muted hover:text-primary"
@@ -56,8 +56,10 @@ export default async function EventDetailPage({
       </Link>
 
       <header className="mt-6">
-        <h1 className="font-display text-5xl text-primary">{event.title}</h1>
-        <div className="mt-5 grid sm:grid-cols-3 gap-3 text-sm text-ink-muted">
+        <h1 className="font-display text-3xl sm:text-5xl text-primary">
+          {event.title}
+        </h1>
+        <div className="mt-5 grid sm:grid-cols-3 gap-2 sm:gap-3 text-sm text-ink-muted">
           <p className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 text-primary" aria-hidden />
             {formatEventDate(event.date)}
@@ -81,19 +83,22 @@ export default async function EventDetailPage({
       </header>
 
       {event.flyer && (
-        <div className="relative my-10 rounded-2xl overflow-hidden border border-line bg-bg-elev">
+        <div className="relative my-8 sm:my-10 rounded-2xl overflow-hidden border border-line bg-bg-elev mx-auto max-w-md sm:max-w-full">
           <Image
             src={event.flyer}
             alt={`${event.title} flyer`}
             width={1200}
             height={1500}
+            sizes="(min-width: 1024px) 768px, 100vw"
             className="w-full h-auto object-contain"
             priority
           />
         </div>
       )}
 
-      <p className="text-lg text-ink leading-relaxed">{event.summary}</p>
+      <p className="text-base sm:text-lg text-ink leading-relaxed">
+        {event.summary}
+      </p>
 
       {event.highlights && event.highlights.length > 0 && (
         <section className="mt-10">
@@ -121,12 +126,12 @@ export default async function EventDetailPage({
         </section>
       )}
 
-      <div className="mt-12 flex flex-wrap gap-3">
+      <div className="mt-10 sm:mt-12 flex flex-col sm:flex-row sm:flex-wrap gap-3">
         <a
           href={mapsHref}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center px-5 py-3 rounded-2xl bg-primary text-bg font-medium hover:bg-cream transition-colors"
+          className="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-primary text-bg font-medium hover:bg-cream transition-colors"
         >
           Get directions
         </a>
@@ -135,7 +140,7 @@ export default async function EventDetailPage({
             href={event.externalUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
           >
             Partner site →
           </a>
@@ -145,7 +150,7 @@ export default async function EventDetailPage({
             href={event.donateUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
           >
             Donate
           </a>

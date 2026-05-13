@@ -25,9 +25,11 @@ const items = [
 
 export function WhatWeDo() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-16">
-      <h2 className="font-display text-4xl text-primary mb-10">What we do</h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+    <section className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
+      <h2 className="font-display text-3xl sm:text-4xl text-primary mb-8 sm:mb-10">
+        What we do
+      </h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         {items.map(({ icon: Icon, title, body }) => (
           <div
             key={title}
