@@ -29,9 +29,10 @@ export const site = {
   ],
   nav: [
     { label: "Home", href: "/", live: true },
+    { label: "Events", href: "/events", live: true },
     { label: "History", href: "/history", live: true },
+    { label: "Weather", href: "/weather", live: true },
     { label: "Classes", href: "/classes", live: false },
-    { label: "Events", href: "/events", live: false },
     { label: "Shop", href: "/shop", live: false },
   ],
 } as const;
