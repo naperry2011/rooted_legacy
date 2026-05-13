@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0b0b0a;
+  --bg-elev: #141210;
+  --ink: #f3ead8;
+  --ink-muted: #b9a980;
+  --primary: #d9a441;
+  --primary-deep: #a87423;
+  --accent: #b5651d;
+  --leaf: #3f6e3a;
+  --leaf-deep: #2a4b27;
+  --tomato: #c0392b;
+  --carrot: #e2733b;
+  --cream: #f2e6cf;
+  --line: rgba(217, 164, 65, 0.18);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
+  --color-accent: var(--accent);
+  --color-leaf: var(--leaf);
+  --color-leaf-deep: var(--leaf-deep);
+  --color-tomato: var(--tomato);
+  --color-carrot: var(--carrot);
+  --color-cream: var(--cream);
+  --color-line: var(--line);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv01";
+  background-image:
+    radial-gradient(1200px 600px at 20% -10%, rgba(217, 164, 65, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(63, 110, 58, 0.08), transparent 60%);
+}
+
+.font-display {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+/* Subtle paper-grain texture for hero/cards */
+.bg-grain {
+  background-image:
+    radial-gradient(rgba(242, 230, 207, 0.04) 1px, transparent 1px),
+    radial-gradient(rgba(242, 230, 207, 0.03) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+}
+
+/* Brand link styling */
+a {
+  color: inherit;
+}
+a:hover {
+  color: var(--primary);
+}

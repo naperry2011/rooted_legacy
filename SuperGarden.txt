@@ -1,0 +1,7 @@
+Garden classes
+menu for purchase/products
+events/subscriptions model (public calendar)
+informative people can learn on the history 
+weather tracker on platform 
+
+process to shipping produce to local stores and possible families
