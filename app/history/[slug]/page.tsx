@@ -26,13 +26,22 @@ export async function generateMetadata({
 
 const mdxComponents = {
   h1: (p: React.ComponentProps<"h1">) => (
-    <h1 className="font-display text-4xl text-primary mt-12 mb-4" {...p} />
+    <h1
+      className="font-display text-3xl sm:text-4xl text-primary mt-10 sm:mt-12 mb-3 sm:mb-4 leading-tight"
+      {...p}
+    />
   ),
   h2: (p: React.ComponentProps<"h2">) => (
-    <h2 className="font-display text-3xl text-cream mt-10 mb-3" {...p} />
+    <h2
+      className="font-display text-2xl sm:text-3xl text-cream mt-8 sm:mt-10 mb-3 leading-tight"
+      {...p}
+    />
   ),
   h3: (p: React.ComponentProps<"h3">) => (
-    <h3 className="font-display text-2xl text-cream mt-8 mb-2" {...p} />
+    <h3
+      className="font-display text-xl sm:text-2xl text-cream mt-6 sm:mt-8 mb-2"
+      {...p}
+    />
   ),
   p: (p: React.ComponentProps<"p">) => (
     <p className="text-ink leading-relaxed my-4" {...p} />
@@ -62,15 +71,15 @@ export default async function HistoryArticlePage({
   if (!article) notFound();
 
   return (
-    <article className="mx-auto max-w-3xl px-6 py-16">
+    <article className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16">
       <Link
         href="/history"
         className="text-sm text-ink-muted hover:text-primary"
       >
         ← Back to history
       </Link>
-      <header className="mt-6 mb-10 border-b border-line pb-8">
-        <h1 className="font-display text-5xl text-primary">
+      <header className="mt-6 mb-8 sm:mb-10 border-b border-line pb-6 sm:pb-8">
+        <h1 className="font-display text-3xl sm:text-5xl text-primary leading-tight">
           {article.frontmatter.title}
         </h1>
         {article.frontmatter.date && (
