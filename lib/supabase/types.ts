@@ -52,6 +52,11 @@ export type Database = {
           external_url: string | null;
           highlights: Json;
           partners: Json;
+          tagline: string | null;
+          price_cents: number | null;
+          themes: Json;
+          included_perks: Json;
+          is_featured: boolean;
           created_at: string;
           updated_at: string;
         },
@@ -71,6 +76,11 @@ export type Database = {
           external_url?: string | null;
           highlights?: Json;
           partners?: Json;
+          tagline?: string | null;
+          price_cents?: number | null;
+          themes?: Json;
+          included_perks?: Json;
+          is_featured?: boolean;
         },
         Partial<{
           slug: string;
@@ -88,6 +98,11 @@ export type Database = {
           external_url: string | null;
           highlights: Json;
           partners: Json;
+          tagline: string | null;
+          price_cents: number | null;
+          themes: Json;
+          included_perks: Json;
+          is_featured: boolean;
         }>
       >;
       bookings: Table<

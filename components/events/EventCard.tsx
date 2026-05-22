@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Sparkles, Ticket } from "lucide-react";
 import { formatEventDate, formatTimeRange } from "@/content/events";
-import type { EventRow } from "@/lib/events";
+import { formatPriceCents, type EventRow } from "@/lib/events";
 
 export function EventCard({
   event,
@@ -11,13 +11,25 @@ export function EventCard({
   event: EventRow;
   past?: boolean;
 }) {
+  const featured = event.is_featured && !past;
+  const price = formatPriceCents(event.price_cents);
+
   return (
     <article
       className={
-        "group rounded-2xl border border-line bg-bg-elev overflow-hidden hover:border-primary/40 transition-colors " +
-        (past ? "opacity-90" : "")
+        "group relative rounded-2xl border overflow-hidden transition-colors " +
+        (featured
+          ? "border-primary/40 bg-bg-elev shadow-[0_20px_60px_-20px_rgba(217,164,65,0.35)] ring-1 ring-primary/20 hover:border-primary/60"
+          : "border-line bg-bg-elev hover:border-primary/40") +
+        (past ? " opacity-90" : "")
       }
     >
+      {featured && (
+        <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full bg-primary text-bg text-[10px] uppercase tracking-widest px-2.5 py-1 font-medium">
+          <Sparkles className="h-3 w-3" aria-hidden />
+          Featured
+        </span>
+      )}
       <Link href={`/events/${event.slug}`} className="block">
         {event.flyer_path && (
           <div className="relative aspect-[4/5] sm:aspect-[16/10] bg-bg">
@@ -39,6 +51,11 @@ export function EventCard({
           <h3 className="font-display text-2xl text-cream group-hover:text-primary transition-colors">
             {event.title}
           </h3>
+          {event.tagline && (
+            <p className="mt-1 font-display text-sm italic text-leaf">
+              {event.tagline}
+            </p>
+          )}
           <div className="mt-3 space-y-1 text-sm text-ink-muted">
             <p className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-primary" aria-hidden />
@@ -59,6 +76,12 @@ export function EventCard({
             </p>
           </div>
           <p className="mt-4 text-sm text-ink line-clamp-3">{event.summary}</p>
+          {price && (
+            <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
+              <Ticket className="h-3 w-3" aria-hidden />
+              {price}
+            </p>
+          )}
         </div>
       </Link>
     </article>
