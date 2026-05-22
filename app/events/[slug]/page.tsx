@@ -10,7 +10,6 @@ import {
 } from "@/lib/events";
 import { getCurrentUser } from "@/lib/auth";
 import { BookingForm } from "@/components/events/BookingForm";
-import { site } from "@/content/site";
 
 type Params = { slug: string };
 
@@ -162,6 +161,13 @@ export default async function EventDetailPage({
               );
             })}
           </p>
+        </section>
+      )}
+
+      {canRsvp && (
+        <section className="mt-12 rounded-2xl border border-line bg-bg-elev p-6 sm:p-8">
+          <h2 className="font-display text-2xl text-cream mb-4">RSVP</h2>
+          <BookingForm eventId={event.id} defaultEmail={user?.email} />
         </section>
       )}
 
