@@ -108,7 +108,7 @@ update public.events
  where slug = 'values-and-ethics';
 
 -- ---------- gallery_photos ----------
-
+-- Flyers + the brand mark, served from /public/brand/
 insert into public.gallery_photos (path, alt, caption, sort_order)
 values
   ('/brand/rooted_legacy_logo.jpg',     'Rooted Legacy logo',                         'The Rooted Legacy mark', 1),
@@ -116,4 +116,18 @@ values
   ('/brand/flyer_grand_opening.jpg',    'Urban Farm Grand Opening flyer',             'Grand Opening — May 16', 3),
   ('/brand/flyer_earth_day.jpg',        'Earth Day Everyday flyer',                   'Earth Day Everyday — April 25', 4),
   ('/brand/partner_cre8tive.jpg',       'Cre8tive Alignment Network — Values & Ethics','Partner programming', 5)
+on conflict do nothing;
+
+-- Event photos from the Grand Opening, linked to the event.
+-- Files live in /public/gallery/ — save these locally before re-running this seed.
+insert into public.gallery_photos (path, alt, caption, sort_order, event_id)
+select
+  v.path, v.alt, v.caption, v.sort_order, e.id
+from (values
+  ('/gallery/grand-opening-class.jpg',         'Outdoor class on the farm',           'Outdoor class on the farm',           10),
+  ('/gallery/grand-opening-vendors-tents.jpg', 'Vendor tents on the green',           'Vendor market on the green',          11),
+  ('/gallery/grand-opening-vendors-row.jpg',   'Vendor row with FREE consultation sign','Free wellness consultations',       12),
+  ('/gallery/grand-opening-pure-trition.jpg',  'Pure-trition juice and smoothie truck','Pure-trition juice + smoothie truck', 13)
+) as v(path, alt, caption, sort_order)
+join public.events e on e.slug = 'urban-farm-grand-opening'
 on conflict do nothing;

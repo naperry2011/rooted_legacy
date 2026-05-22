@@ -21,6 +21,7 @@ import {
 } from "@/lib/events";
 import { getCurrentUser } from "@/lib/auth";
 import { BookingForm } from "@/components/events/BookingForm";
+import { listPhotosForEvent } from "@/lib/gallery";
 import { site } from "@/content/site";
 
 type Params = { slug: string };
@@ -63,6 +64,7 @@ export default async function EventDetailPage({
   if (!event) notFound();
 
   const user = await getCurrentUser().catch(() => null);
+  const eventPhotos = await listPhotosForEvent(event.id).catch(() => []);
   const mapsHref = `https://www.google.com/maps?q=${encodeURIComponent(event.location)}`;
   const time = event.start_time
     ? formatTimeRange(
@@ -248,6 +250,36 @@ export default async function EventDetailPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {eventPhotos.length > 0 && (
+        <section className="mt-12">
+          <h2 className="font-display text-2xl text-cream mb-4">
+            {isUpcoming ? "From past events" : "From the day"}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {eventPhotos.map((p) => (
+              <figure
+                key={p.id}
+                className="relative aspect-square rounded-xl overflow-hidden border border-line bg-bg-elev group"
+              >
+                <Image
+                  src={p.src}
+                  alt={p.alt}
+                  fill
+                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+                  className="object-cover transition-transform group-hover:scale-105"
+                  unoptimized={p.src.startsWith("http")}
+                />
+                {p.caption && (
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg/90 to-transparent px-3 py-2 text-[11px] text-cream opacity-0 group-hover:opacity-100 transition-opacity">
+                    {p.caption}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
         </section>
       )}
 
