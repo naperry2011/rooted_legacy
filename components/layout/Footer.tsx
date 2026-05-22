@@ -21,6 +21,12 @@ export function Footer() {
           </p>
           <Link
             className="text-ink-muted hover:text-primary transition-colors"
+            href="/about"
+          >
+            Our story
+          </Link>
+          <Link
+            className="text-ink-muted hover:text-primary transition-colors"
             href="/events"
           >
             Events
@@ -48,6 +54,12 @@ export function Footer() {
             href="/gallery"
           >
             Gallery
+          </Link>
+          <Link
+            className="text-ink-muted hover:text-primary transition-colors"
+            href="/vendors"
+          >
+            Vendors + partners
           </Link>
           <Link
             className="text-ink-muted hover:text-primary transition-colors"
