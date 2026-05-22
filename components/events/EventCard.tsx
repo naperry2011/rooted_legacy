@@ -1,17 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Clock, MapPin } from "lucide-react";
-import {
-  formatEventDate,
-  formatTimeRange,
-  type Event,
-} from "@/content/events";
+import { formatEventDate, formatTimeRange } from "@/content/events";
+import type { EventRow } from "@/lib/events";
 
 export function EventCard({
   event,
   past = false,
 }: {
-  event: Event;
+  event: EventRow;
   past?: boolean;
 }) {
   return (
@@ -22,10 +19,10 @@ export function EventCard({
       }
     >
       <Link href={`/events/${event.slug}`} className="block">
-        {event.flyer && (
+        {event.flyer_path && (
           <div className="relative aspect-[4/5] sm:aspect-[16/10] bg-bg">
             <Image
-              src={event.flyer}
+              src={event.flyer_path}
               alt={`${event.title} flyer`}
               fill
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -47,10 +44,13 @@ export function EventCard({
               <CalendarDays className="h-4 w-4 text-primary" aria-hidden />
               {formatEventDate(event.date)}
             </p>
-            {event.start && (
+            {event.start_time && (
               <p className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" aria-hidden />
-                {formatTimeRange(event.start, event.end)}
+                {formatTimeRange(
+                  event.start_time.slice(0, 5),
+                  event.end_time?.slice(0, 5),
+                )}
               </p>
             )}
             <p className="flex items-center gap-2">
