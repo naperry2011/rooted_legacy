@@ -10,46 +10,32 @@ ADR log. Write entries when a decision is hard to reverse, affects multiple comp
 **Status:** Accepted
 
 **Context**
-Single developer building a marketing-plus-content site that might grow into commerce, auth, and live data. Need SSR/SSG for SEO, room for server actions, styling flexible enough to match a hand-drawn logo aesthetic.
+Single developer building a marketing-plus-content site that might grow into commerce, auth, and live data.
 
 **Decision**
-Next.js 15 App Router + TypeScript, Tailwind CSS v4 (CSS-first config), lucide-react icons, hosted on Vercel.
-
-**Consequences**
-- Positive: zero-config deploys; RSC keeps client bundles small; clear path to server actions / auth / commerce
-- Negative: locks us into Vercel for easiest path; stricter React 19 lint rules
-- Neutral: Tailwind v4's CSS-first config differs from older muscle memory
+Next.js 15 App Router + TypeScript, Tailwind CSS v4, lucide-react icons, hosted on Vercel.
 
 ---
 
-## ADR-002: MDX-in-repo for history + recipes; typed TS for events
+## ADR-002: MDX-in-repo for history + recipes; typed TS for events; Google Sheets for produce
 
 **Date:** 2026-05-12, expanded 2026-05-22
 **Status:** Accepted
 
 **Context**
-Three content shapes: long-form prose (history, recipes), structured records (events, vendors), tabular weekly inventory (produce). Each suits a different store.
+Three content shapes (long-form, structured records, weekly inventory) each fit a different store.
 
 **Decision**
-Long-form → MDX in `content/{history,recipes}/*.mdx` rendered via `next-mdx-remote/rsc`. Structured records → Supabase Postgres tables. Produce inventory → Google Sheets (staff-managed, read-only on the site).
-
-**Consequences**
-- Positive: each layer matches its editor (devs for MDX, SQL/admin for Supabase, staff for Sheets); type safety on event shape; fast iteration
-- Negative: three different mental models; cross-references between layers (recipe ↔ shop item) are file-based and unindexed
-- Neutral: easy migration paths if any becomes painful — MDX can move into Supabase, Sheets can move into Supabase
+Long-form → MDX. Structured records → Supabase Postgres. Produce inventory → Google Sheets.
 
 ---
 
 ## ADR-003: OpenWeather over Open-Meteo
 
-**Date:** 2026-05-12 (initial) → 2026-05-13 (reverted to single provider)
+**Date:** 2026-05-12 → 2026-05-13 (reverted to single provider)
 **Status:** Accepted
 
-**Context**
-Open-Meteo is free + key-less; OpenWeather is free with a key. Briefly ran both via a provider abstraction during OpenWeather key activation lag.
-
-**Decision**
-Single-provider OpenWeather. `lib/weather.ts` carries `import "server-only"` and gates on `OPENWEATHER_API_KEY` — UI shows graceful fallbacks when unset.
+Single-provider OpenWeather. Graceful fallback when API key unset.
 
 ---
 
@@ -58,29 +44,16 @@ Single-provider OpenWeather. `lib/weather.ts` carries `import "server-only"` and
 **Date:** 2026-05-13
 **Status:** Accepted
 
-**Context**
-Mobile hamburger needs `useState`. Everything else can stay RSC.
-
-**Decision**
-Only `components/layout/Header.tsx` is `"use client"`. Close-on-navigate via `onClick` on the `<Link>` (not `useEffect(pathname)`, which trips `react-hooks/set-state-in-effect` in React 19).
+Only `components/layout/Header.tsx` is `"use client"`. Close-on-navigate via `onClick` (not `useEffect(pathname)`).
 
 ---
 
-## ADR-005: Git workflow — single working branch (`perry-v2`)
+## ADR-005: Git workflow — single working branch `perry-v2`
 
-**Date:** 2026-05-13 (initial), revised 2026-05-22
+**Date:** 2026-05-13, revised 2026-05-22
 **Status:** Accepted
 
-**Context**
-Originally planned `develop` + `feat/*` branches. With one developer and one prod environment, this added overhead without value.
-
-**Decision**
-Single working branch `perry-v2` off `main`. All work commits to `perry-v2`. PRs go `perry-v2 → main`. Vercel auto-deploys `main`. `develop` + all historical `feat/*` branches deleted.
-
-**Consequences**
-- Positive: minimal mental model; matches actual cadence
-- Negative: no staging tier between feature and prod — Vercel preview deploys on PRs are the only check
-- Neutral: can reintroduce branching if a second developer joins
+Single `perry-v2` branch off `main`. PRs go `perry-v2 → main`. Vercel auto-deploys `main`. `develop` and `feat/*` deleted.
 
 ---
 
@@ -89,16 +62,7 @@ Single working branch `perry-v2` off `main`. All work commits to `perry-v2`. PRs
 **Date:** 2026-05-22
 **Status:** Accepted
 
-**Context**
-Phase 1 MVP needs accounts, RSVPs persisted, a newsletter list, vendor applications, contact messages, gallery photos. Choices: Supabase, Neon + Auth.js + Vercel Blob, or skip backend entirely.
-
-**Decision**
-Supabase. Postgres + Auth (magic link MVP, OAuth/email-password later) + Storage + RLS all in one product.
-
-**Consequences**
-- Positive: fastest path to working accounts + DB + uploads; free tier covers the project comfortably; SQL is portable if we ever leave
-- Negative: vendor concentration; service-role key must be carefully scoped
-- Neutral: schema is in `supabase/migrations/*.sql`, checked into the repo; types hand-maintained in `lib/supabase/types.ts` until we run `supabase gen types`
+Supabase: Postgres + Auth (magic link MVP) + Storage + RLS in one product.
 
 ---
 
@@ -107,38 +71,16 @@ Supabase. Postgres + Auth (magic link MVP, OAuth/email-password later) + Storage
 **Date:** 2026-05-22
 **Status:** Accepted
 
-**Context**
-Different parts of the app need different auth/cookie contexts: build-time slug enumeration, user-context reads, anonymous public reads, privileged server-side writes.
-
-**Decision**
-Four explicit clients in `lib/supabase/*`:
-- `server.ts` — cookies-bound, for RSC + route handlers that need user context
-- `browser.ts` — `"use client"`, for any client-side Supabase usage
-- `admin.ts` — service role, server-only, for writes that accept guest input + admin reads
-- `public.ts` — anon key, no cookies, safe at build (used by `generateStaticParams`) and for unauthenticated public reads
-
-**Consequences**
-- Positive: every call site picks the right privilege level by name; failures are explicit
-- Negative: four files instead of one; engineers must learn the distinction
-- Neutral: each caches its client; no per-request churn
+`lib/supabase/{server,browser,admin,public}.ts` — each with a different auth/cookie profile. Choose by use case.
 
 ---
 
-## ADR-008: Hand-maintained `Database` type (for now)
+## ADR-008: Hand-maintained `Database` type
 
 **Date:** 2026-05-22
 **Status:** Accepted; supersede when schema stabilizes
 
-**Context**
-`@supabase/supabase-js` insert types collapse to `never[]` without a `Database` generic. Could either run `supabase gen types typescript` (requires CLI + project link) or hand-write.
-
-**Decision**
-Hand-write `lib/supabase/types.ts` for the MVP tables. Each table includes `Row`, `Insert`, `Update`, and (critically) `Relationships: []` — the last one is required by newer SDK versions, otherwise inserts break.
-
-**Consequences**
-- Positive: no CLI dependency for now; minimal surface
-- Negative: drift risk — if a migration changes a column and the type isn't updated, TypeScript will lie to us
-- Neutral: switch to generated types in Phase 2 when payments tables stabilize
+Hand-write `lib/supabase/types.ts`. Include `Relationships: []` per table or insert types collapse to `never[]`.
 
 ---
 
@@ -147,31 +89,86 @@ Hand-write `lib/supabase/types.ts` for the MVP tables. Each table includes `Row`
 **Date:** 2026-05-22
 **Status:** Accepted
 
-**Context**
-Staff already track produce weekly in spreadsheets. Building an admin UI for it would duplicate their existing workflow and require training.
-
-**Decision**
-Staff maintains a single Google Sheet (column spec in `docs/SETUP.md`). `lib/sheets.ts` reads via a service-account JWT with `spreadsheets.values.get`, normalizes rows into a typed `ProduceItem[]`, and caches in Next.js fetch cache for 15 minutes with tag `produce` so admin can force-refresh.
-
-**Consequences**
-- Positive: staff stays in tools they know; zero admin UI needed for MVP; cheap; resilient (sheet is the source of truth, the site is just a view)
-- Negative: no validation of staff-entered data (we coerce in TS but bad rows fail silently); sheet structure changes require coordinated `lib/sheets.ts` updates
-- Neutral: Phase 2 farm-stand checkout still pulls from this sheet, but order rows go to Postgres
+Staff edits one shared sheet. `lib/sheets.ts` reads via service-account JWT, caches 15 min.
 
 ---
 
-## ADR-010: Read-only admin in MVP; full CRUD in Phase 2
+## ADR-010: Read-only admin in MVP
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+`/admin` has dashboard + 4 list views. Edits happen in Supabase Studio. Phase 2 introduces forms.
+
+---
+
+## ADR-011: Event "flair" via additive nullable columns
 
 **Date:** 2026-05-22
 **Status:** Accepted
 
 **Context**
-Phase 1 wants to demo value fast. Building admin forms for every table is multi-week work.
+Soothing Sundays event needed a custom detail-page treatment (tagline, price, themed pillars, included perks, featured badge). Three options:
+1. Hard-code per-event behavior in the page based on slug
+2. Add a separate `featured_events` table joined to events
+3. Add optional columns to the existing `events` table
 
 **Decision**
-`/admin` has a dashboard + 4 list views (bookings, subscribers, vendors, messages). All read-only. Edits happen in Supabase Studio (the dashboard SQL editor + table editor) for now. Phase 2 introduces forms.
+Option 3 — migration `0002_event_flair.sql` adds `tagline`, `price_cents`, `themes (jsonb)`, `included_perks (jsonb)`, `is_featured (boolean)` columns. All nullable / default-empty so existing rows are unaffected. The event detail page checks `is_featured` and renders the richer treatment conditionally.
 
 **Consequences**
-- Positive: MVP ships fast; "real data" demo without half-built edit UIs
-- Negative: client/staff need Supabase Studio access to make changes; brittle for non-technical users
-- Neutral: easy to layer admin forms onto existing pages later
+- **Positive:** any future event can opt into the flair just by setting these columns; no per-event code paths; data lives next to its event
+- **Negative:** widens the events table by 5 columns even though most events won't use them; adding more flair fields in the future means more nullable columns
+- **Neutral:** matches the spirit of the existing `highlights` + `partners` jsonb columns
+
+**Alternatives considered**
+- Separate `featured_events` table — adds join complexity for a one-to-zero-or-one relationship that's better as columns
+- Slug-based hard-coding — fragile, doesn't scale beyond one featured event
+
+---
+
+## ADR-012: Vendor data — typed array in MVP, DB in Phase 2
+
+**Date:** 2026-05-22
+**Status:** Accepted; revisit in Phase 2
+
+**Context**
+The `/vendors` directory page needs to display partners and featured vendors. Two data sources already exist for partners: `content/site.ts` `partners[]` (long-term partners shown on home strip). Pure-trition and similar event vendors don't fit there — they appeared at one event but aren't ongoing co-organizers.
+
+**Decision**
+For MVP, vendor directory is rendered from two static sources:
+1. `site.partners` — long-term partners (Bodi Buzz, Cre8tive Alignment Network)
+2. `content/vendors.ts` `featuredVendors[]` — typed array of featured event vendors (Pure-trition)
+
+Vendor applications still write to the `vendor_applications` table; admin approves them manually for now via Supabase Studio.
+
+In Phase 2, build the DB-backed `vendor_profiles` table. Admin approval becomes a single click that creates a row. Retire `content/vendors.ts` as a one-time seed.
+
+**Consequences**
+- **Positive:** zero infra; the directory ships now; clear migration path
+- **Negative:** approving a vendor application doesn't currently create a directory entry — admin must edit `content/vendors.ts` and PR it. Acceptable in MVP because applications are infrequent.
+- **Neutral:** two sources of truth for vendor-shaped data (partners in site.ts + featuredVendors in vendors.ts) — both render in the same UI section, so users don't notice the split
+
+**Alternatives considered**
+- Unify everything under `site.partners` — would conflate long-term partners with one-off vendors
+- Build vendor_profiles in MVP — would have meant building the admin approval flow too, expanding MVP scope
+
+---
+
+## ADR-013: Default Open Graph image points at a community photo
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+**Context**
+Site-wide default OG image was the bare logo on a black background — fine on the home page but uninspiring for share previews from history articles, recipes, or general pages.
+
+**Decision**
+Root layout's `openGraph.images` defaults to `/gallery/grand-opening-vendors-tents.jpg` (1200×900). Logo kept as a secondary entry. Twitter card set to `summary_large_image` with the same source. Specific routes (`/about`, `/vendors`, `/events/[slug]`) override with contextual images.
+
+**Consequences**
+- **Positive:** shares show actual farm life
+- **Negative:** the default depends on a file that must be saved before it works; until then social previews fall back to whatever crawler default
+- **Neutral:** routes that don't override (history, recipes, contact) all show the market photo — fine for now, can be customized per-route later
+
+---

@@ -5,7 +5,7 @@
 Category: UI
 
 Primary Files:
-- app/layout.tsx
+- app/layout.tsx (now sets default OG image + Twitter card)
 - components/layout/Header.tsx
 - components/layout/Footer.tsx
 - components/brand/Logo.tsx
@@ -13,13 +13,24 @@ Primary Files:
 
 Supporting Files:
 - content/site.ts (nav has `primary` flag — desktop nav shows only primaries)
-- public/brand/*
+- public/brand/*, public/gallery/*
 
 External Integrations:
 - Google Fonts (Cormorant Garamond, Inter)
 
+## About / Our Story
+
+Category: UI
+
+Primary Files:
+- app/about/page.tsx
+
+Supporting Files:
+- public/gallery/grand-opening-class.jpg (hero)
+- content/site.ts
+
 Entry Points:
-- Wraps every route as Root Layout
+- `/about`
 
 ## Marketing Home
 
@@ -30,11 +41,11 @@ Primary Files:
 - components/marketing/Hero.tsx
 - components/marketing/WhatWeDo.tsx
 - components/marketing/LocationCard.tsx
-- components/marketing/PartnerStrip.tsx
+- components/marketing/PartnerStrip.tsx (enriched: tagline, service pills, IG + email links)
 
 Supporting Files:
-- components/weather/WeatherWidget.tsx (embedded on home)
-- components/produce/WhatsGrowing.tsx (embedded on home, side-by-side with weather)
+- components/weather/WeatherWidget.tsx
+- components/produce/WhatsGrowing.tsx
 
 External Integrations:
 - OpenWeather (via WeatherWidget)
@@ -43,25 +54,66 @@ External Integrations:
 Entry Points:
 - `/` (ISR 30 min)
 
+## Events + RSVP (with Featured Event flair)
+
+Category: UI + Service
+
+Primary Files:
+- app/events/page.tsx
+- app/events/[slug]/page.tsx (Featured-event treatment: radial glow, tagline, themes pillars, price + perks card)
+- app/events/[slug]/actions.ts (createBooking server action)
+- components/events/EventCard.tsx (Featured pill + tagline + price chip)
+- components/events/BookingForm.tsx
+- lib/events.ts (formatPriceCents helper)
+- lib/validations/booking.ts
+
+Supporting Files:
+- content/events.ts (formatEventDate, formatTimeRange)
+- supabase/migrations/0001_init.sql (events, bookings)
+- supabase/migrations/0002_event_flair.sql (tagline, price_cents, themes, included_perks, is_featured)
+- supabase/seed.sql (4 events incl. Soothing Sundays + 4 event photos)
+
+External Integrations:
+- Supabase Postgres
+- Resend (RSVP confirmations)
+
+Entry Points:
+- `/events`, `/events/[slug]`
+
+## Vendor Directory + Application
+
+Category: UI
+
+Primary Files:
+- app/vendors/page.tsx (directory: long-term partners + featured vendors)
+- app/vendors/apply/page.tsx + VendorForm + actions
+- components/vendors/VendorCard.tsx
+- content/vendors.ts (typed Vendor[], MVP source of truth)
+- lib/validations/vendor.ts
+
+Supporting Files:
+- content/site.ts `partners` (long-term partners shown in directory)
+- public/gallery/grand-opening-pure-trition.jpg (Pure-trition card)
+
+External Integrations:
+- Supabase (vendor_applications writes)
+- Resend (admin notify + applicant ack)
+
+Entry Points:
+- `/vendors`, `/vendors/apply`
+
 ## Auth (Magic-link)
 
 Category: Service + UI
 
 Primary Files:
-- app/login/page.tsx
-- app/login/LoginForm.tsx
-- app/login/actions.ts
-- app/auth/callback/route.ts
-- app/auth/signout/route.ts
+- app/login/page.tsx, LoginForm.tsx, actions.ts
+- app/auth/callback/route.ts, signout/route.ts
 - lib/auth.ts (getCurrentUser, getCurrentRole, requireAdmin)
 - middleware.ts (protects /admin/*, /account/*)
 
-Supporting Files:
-- lib/supabase/server.ts, browser.ts
-
 External Integrations:
 - Supabase Auth (OTP / magic link)
-- Resend (Supabase sends the magic-link email itself unless overridden)
 
 Entry Points:
 - `/login`, `/auth/callback`, `/auth/signout`
@@ -73,36 +125,8 @@ Category: UI
 Primary Files:
 - app/account/page.tsx
 
-Supporting Files:
-- lib/auth.ts
-
 Entry Points:
-- `/account` (auth-required; redirects to /login)
-
-## Events + RSVP
-
-Category: UI + Service
-
-Primary Files:
-- app/events/page.tsx
-- app/events/[slug]/page.tsx
-- app/events/[slug]/actions.ts (createBooking server action)
-- components/events/EventCard.tsx
-- components/events/BookingForm.tsx
-- lib/events.ts (listPublishedEvents, getEventBySlug, partitionEvents, listPublishedEventSlugsForBuild)
-- lib/validations/booking.ts
-
-Supporting Files:
-- content/events.ts (formatEventDate, formatTimeRange helpers; original array kept for seed)
-- supabase/migrations/0001_init.sql (events, bookings)
-- supabase/seed.sql
-
-External Integrations:
-- Supabase Postgres (events, bookings)
-- Resend (RSVP confirmation email)
-
-Entry Points:
-- `/events`, `/events/[slug]`
+- `/account` (auth-required)
 
 ## Produce (Farm Stand)
 
@@ -116,24 +140,19 @@ Primary Files:
 - lib/sheets.ts (Google Sheets reader, 15-min cache)
 
 External Integrations:
-- Google Sheets API (service-account read)
+- Google Sheets API
 
 Entry Points:
 - `/shop`, `/shop/[sku]`
-- Home widget
 
 ## Recipes
 
 Category: UI
 
 Primary Files:
-- app/recipes/page.tsx
-- app/recipes/[slug]/page.tsx
-- lib/recipes.ts (MDX loader; listRecipes, getRecipe, listRecipesByIngredient)
+- app/recipes/page.tsx, app/recipes/[slug]/page.tsx
+- lib/recipes.ts
 - content/recipes/*.mdx (2 seed recipes)
-
-Supporting Files:
-- /shop/[sku] cross-links to matching recipes via listRecipesByIngredient
 
 Entry Points:
 - `/recipes`, `/recipes/[slug]` (SSG)
@@ -143,8 +162,7 @@ Entry Points:
 Category: UI
 
 Primary Files:
-- app/history/page.tsx
-- app/history/[slug]/page.tsx
+- app/history/page.tsx, app/history/[slug]/page.tsx
 - lib/mdx.ts
 - content/history/*.mdx
 
@@ -161,50 +179,19 @@ Primary Files:
 - app/api/newsletter/confirm/route.ts
 - lib/validations/newsletter.ts
 
-Supporting Files:
-- components/layout/Footer.tsx (embeds signup)
-- supabase migration: subscribers table
-
 External Integrations:
-- Resend (double-opt-in email)
-- Supabase (subscribers table)
-
-Entry Points:
-- Footer signup; `/api/newsletter/confirm?token=…`
-
-## Vendor Application
-
-Category: Service + UI
-
-Primary Files:
-- app/vendors/apply/page.tsx
-- app/vendors/apply/VendorForm.tsx
-- app/vendors/apply/actions.ts
-- lib/validations/vendor.ts
-
-External Integrations:
-- Supabase (vendor_applications)
-- Resend (notification to CONTACT_TO_EMAIL + acknowledgement to applicant)
-
-Entry Points:
-- `/vendors/apply`
+- Resend, Supabase
 
 ## Contact
 
 Category: Service + UI
 
 Primary Files:
-- app/contact/page.tsx
-- app/contact/ContactForm.tsx
-- app/contact/actions.ts
+- app/contact/page.tsx, ContactForm.tsx, actions.ts
 - lib/validations/contact.ts
 
 External Integrations:
-- Supabase (contact_messages)
-- Resend (forward to CONTACT_TO_EMAIL)
-
-Entry Points:
-- `/contact`
+- Supabase, Resend
 
 ## Gallery
 
@@ -212,13 +199,18 @@ Category: UI
 
 Primary Files:
 - app/gallery/page.tsx
-- lib/gallery.ts (resolves local /public paths or Supabase Storage URLs)
+- lib/gallery.ts (listGalleryPhotos, listPhotosForEvent)
+
+Supporting Files:
+- public/gallery/grand-opening-*.jpg (4 photos, event-linked via gallery_photos.event_id)
+- public/brand/flyer_*.jpg, partner_*.jpg
 
 External Integrations:
 - Supabase Storage (`gallery` bucket; optional)
 
 Entry Points:
 - `/gallery`
+- Event detail pages render `listPhotosForEvent(event.id)` as "From the day"
 
 ## Admin (Read-only)
 
@@ -226,31 +218,21 @@ Category: UI
 
 Primary Files:
 - app/admin/layout.tsx (role-gated)
-- app/admin/page.tsx (dashboard counts)
-- app/admin/bookings/page.tsx
-- app/admin/subscribers/page.tsx
-- app/admin/vendors/page.tsx
-- app/admin/messages/page.tsx
-- components/admin/DataTable.tsx (DataTable, StatusBadge, formatDateTime)
-
-Supporting Files:
-- lib/supabase/admin.ts (service-role client)
-- lib/auth.ts (requireAdmin)
+- app/admin/page.tsx
+- app/admin/{bookings,subscribers,vendors,messages}/page.tsx
+- components/admin/DataTable.tsx
 
 Entry Points:
-- `/admin`, `/admin/{bookings,subscribers,vendors,messages}`
+- `/admin`, `/admin/*`
 
 ## Weather
 
-Category: Service + UI (unchanged from v1)
+Category: Service + UI
 
 Primary Files:
 - app/weather/page.tsx
 - components/weather/WeatherWidget.tsx
 - lib/weather.ts
-
-External Integrations:
-- OpenWeather
 
 Entry Points:
 - `/weather`
@@ -260,26 +242,18 @@ Entry Points:
 Category: Infra
 
 Primary Files:
-- lib/supabase/server.ts (RSC + route handlers; cookies)
-- lib/supabase/browser.ts (client components)
-- lib/supabase/admin.ts (service role; server-only)
-- lib/supabase/public.ts (anon, cookie-less; safe at build + RSC)
-- lib/supabase/types.ts (hand-written Database type)
+- lib/supabase/{server,browser,admin,public}.ts
+- lib/supabase/types.ts (Database type)
 - supabase/migrations/0001_init.sql
+- supabase/migrations/0002_event_flair.sql
 - supabase/seed.sql
-
-Entry Points:
-- Imported by every feature that touches the DB
 
 ## Email (cross-cutting)
 
 Category: Service
 
 Primary Files:
-- lib/resend.ts (sendEmail, wrapHtml, soft no-op when RESEND_API_KEY missing)
-
-External Integrations:
-- Resend
+- lib/resend.ts
 
 ## Build / Tooling
 
@@ -287,8 +261,7 @@ Category: Infra
 
 Primary Files:
 - package.json, tsconfig.json, next.config.ts, eslint.config.mjs, postcss.config.mjs
-- .env.example
-- .gitignore
+- .env.example, .gitignore
 
 ## Documentation
 
@@ -298,5 +271,5 @@ Primary Files:
 - README.md, FEATURE_SPEC.md
 - CODE_MAP.md, ENTRY_POINTS.md, DATA_FLOW.md, IMPORT_GRAPH_SUMMARY.md, FEATURE_BOUNDARIES.md
 - docs/ai/{memory,roadmap,tasks,decisions,architecture}.md
-- docs/SETUP.md (provisioning Supabase + Resend + Google Sheets)
+- docs/SETUP.md
 - llms.txt

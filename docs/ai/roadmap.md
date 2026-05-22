@@ -8,54 +8,59 @@ Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German 
 
 ## Current Focus
 
-**Theme:** Demo Phase 1 MVP to the client; gather feedback; start Phase 2 payments work in parallel where decisions are unblocked.
+**Theme:** Wrap Phase 1 MVP, get image assets on disk, walk the client through the demo, kick off Phase 2.
 **Goals:**
-1. Get Phase 1 MVP merged + deployed on Vercel with Supabase + auth working end-to-end
-2. Walk the client through the demo and capture feedback on ticket model, refund policy, day-of-ops scope, and CSA pricing
-3. Begin Phase 2 (Stripe + paid tickets + farm-stand checkout + CSA) once those decisions are firm
+1. Get the 5 missing image files saved + committed; verify Vercel deploy renders fully
+2. Client demo walk-through; capture feedback on ticket model, refund policy, day-of-ops scope, CSA pricing
+3. Begin Phase 2 (Stripe + paid tickets + farm-stand checkout + CSA + admin CRUD) once decisions are firm
 
 ## Now
 
-- Merge `perry-v2 → main` after the client provisions Supabase/Resend and verifies the live deploy
-- Resend account + domain verification — currently blocking confirmation emails
-- Google Sheets + service account — currently blocking the produce strand
-- Rotate the dev Supabase + OpenWeather keys that have appeared in chat
-- Client walk-through of the deployed site
+- User saves grand-opening-*.jpg (4 files) to `public/gallery/` and `flyer_soothing_sundays.jpg` to `public/brand/`, commits + pushes
+- Verify deploy: Soothing Sundays detail page renders flair, Grand Opening shows "From the day" gallery, /about hero shows the class photo, /vendors shows Pure-trition truck
+- Merge `perry-v2 → main`
+- Rotate Supabase + OpenWeather dev keys after merge
+- Client walk-through; capture feedback
 
 ## Next
 
-- **Phase 2 — Payments + Write paths:**
-  - Stripe (test mode → live) with Checkout Sessions for tickets and one-time farm-stand orders, Subscriptions for CSA
-  - Migrations for ticket_types, orders, tickets, shop_orders, shop_order_items, csa_plans, csa_memberships, csa_pickups, wholesale_buyers, wholesale_orders, wholesale_order_items
+- **Phase 2 — Payments + write paths:**
+  - Stripe (test mode → live) with Checkout Sessions for tickets + farm-stand orders, Subscriptions for CSA
+  - Promote `is_featured`/`price_cents` into actual paid-ticket flow for Soothing Sundays (currently shows "Tickets opening soon" placeholder)
+  - Migrations for ticket_types, orders, tickets, shop_orders + items, csa_plans + memberships + pickups, wholesale_buyers + orders + items
   - QR-coded ticket emails on `checkout.session.completed` webhook
-  - Full admin CRUD: event editor, vendor approval action that creates a `vendor_profiles` row + lights up the public directory at `/vendors`, refund flow
+  - Full admin CRUD: event editor, vendor approval (promotes from vendor_applications → DB-backed vendor_profiles, retiring content/vendors.ts), refund flow, gallery photo uploads
   - File uploads for vendor logos + gallery photos via Supabase Storage signed URLs
 
 ## Later
 
-- **Phase 3 — Day-of operations** (scope chosen by client):
+- **Phase 3 — Day-of operations** (scope picked by client):
   - QR check-in (`/admin/scan`) — camera + `qr-scanner` lib
   - Live attendance dashboard via Supabase Realtime
   - Vendor day-of list with booth assignments
   - Run-of-show schedule view
 - Wholesale order portal for partner stores/restaurants
-- Photo essays per past event (extend gallery with `event_id`)
+- Photo essays per past event (deeper "From the day" treatment)
 - Membership / supporter wall with public list of monthly donors
 - Seed library + produce share calendar
 - Press / media kit at `/press`
+- Newsletter broadcast composer in admin (currently sent manually via Resend dashboard)
 
 ## Recently Completed
 
+- Soothing Sundays event + featured-event flair (event schema + detail page treatment) — 2026-05-22
+- Event photo linkage ("From the day" on event detail) — 2026-05-22
+- `/about` page with photo hero + values + history CTA — 2026-05-22
+- `/vendors` directory featuring Pure-trition — 2026-05-22
+- Default OG image (community photo) + Twitter card — 2026-05-22
+- Bodi Buzz partner enrichment (tagline, services, IG, email) — 2026-05-22
 - Phase 1 MVP — Supabase + auth + RSVP + produce + recipes + newsletter + gallery + vendor + contact + admin — 2026-05-22
 - Mobile-responsive pass — 2026-05-13
-- OpenWeather production env var set; live weather on prod — 2026-05-13
-- Events page with 3 seed events from the flyers — 2026-05-12
-- Black History in Farming article — 2026-05-12
-- OpenWeather integration (current + hourly + daily) — 2026-05-12
-- v1 foundation (home, history, brand chrome) — 2026-05-11
+- Events page + Black History in Farming + OpenWeather — 2026-05-12
+- v1 foundation — 2026-05-11
 
 ## Deferred / Cancelled
 
-- **Open-Meteo provider abstraction in `lib/weather.ts`** — built as a stopgap during OpenWeather key activation; reverted to single-provider once OpenWeather went live.
-- **`develop` long-lived branch** — deleted; the workflow consolidated to a single `perry-v2` working branch off `main`.
-- **`feat/*` historical branches** — deleted after merge; single working branch model adopted.
+- **Open-Meteo provider abstraction** — built then reverted once OpenWeather went live.
+- **`develop` long-lived branch + `feat/*` branches** — deleted in favor of a single `perry-v2` working branch.
+- **Home-page "From the land" photo strip** — user passed on this one in favor of the About page hero and vendor directory.
