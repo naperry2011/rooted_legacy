@@ -3,17 +3,20 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CalendarDays, Clock, MapPin, Users } from "lucide-react";
+import { formatEventDate, formatTimeRange } from "@/content/events";
 import {
-  events,
-  getEvent,
-  formatEventDate,
-  formatTimeRange,
-} from "@/content/events";
+  getEventBySlug,
+  listPublishedEventSlugsForBuild,
+} from "@/lib/events";
+import { getCurrentUser } from "@/lib/auth";
+import { BookingForm } from "@/components/events/BookingForm";
 
 type Params = { slug: string };
 
-export function generateStaticParams() {
-  return events.map((e) => ({ slug: e.slug }));
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  return listPublishedEventSlugsForBuild();
 }
 
 export async function generateMetadata({
@@ -22,7 +25,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const event = getEvent(slug);
+  const event = await getEventBySlug(slug);
   if (!event) return { title: "Not found" };
   return {
     title: event.title,
@@ -30,7 +33,7 @@ export async function generateMetadata({
     openGraph: {
       title: event.title,
       description: event.summary,
-      images: event.flyer ? [event.flyer] : undefined,
+      images: event.flyer_path ? [event.flyer_path] : undefined,
     },
   };
 }
@@ -41,10 +44,21 @@ export default async function EventDetailPage({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const event = getEvent(slug);
+  const event = await getEventBySlug(slug);
   if (!event) notFound();
 
+  const user = await getCurrentUser().catch(() => null);
   const mapsHref = `https://www.google.com/maps?q=${encodeURIComponent(event.location)}`;
+  const time = event.start_time
+    ? formatTimeRange(
+        event.start_time.slice(0, 5),
+        event.end_time?.slice(0, 5),
+      )
+    : "";
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const isUpcoming = event.date >= todayKey;
+  const canRsvp = event.kind === "free_rsvp" && isUpcoming;
 
   return (
     <article className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
@@ -64,10 +78,10 @@ export default async function EventDetailPage({
             <CalendarDays className="h-4 w-4 text-primary" aria-hidden />
             {formatEventDate(event.date)}
           </p>
-          {event.start && (
+          {time && (
             <p className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-primary" aria-hidden />
-              {formatTimeRange(event.start, event.end)}
+              {time}
             </p>
           )}
           <a
@@ -82,10 +96,10 @@ export default async function EventDetailPage({
         </div>
       </header>
 
-      {event.flyer && (
+      {event.flyer_path && (
         <div className="relative my-8 sm:my-10 rounded-2xl overflow-hidden border border-line bg-bg-elev mx-auto max-w-md sm:max-w-full">
           <Image
-            src={event.flyer}
+            src={event.flyer_path}
             alt={`${event.title} flyer`}
             width={1200}
             height={1500}
@@ -100,9 +114,11 @@ export default async function EventDetailPage({
         {event.summary}
       </p>
 
-      {event.highlights && event.highlights.length > 0 && (
+      {event.highlights.length > 0 && (
         <section className="mt-10">
-          <h2 className="font-display text-2xl text-cream mb-4">What to expect</h2>
+          <h2 className="font-display text-2xl text-cream mb-4">
+            What to expect
+          </h2>
           <ul className="grid sm:grid-cols-2 gap-2 text-ink">
             {event.highlights.map((h) => (
               <li
@@ -116,13 +132,20 @@ export default async function EventDetailPage({
         </section>
       )}
 
-      {event.partners && event.partners.length > 0 && (
+      {event.partners.length > 0 && (
         <section className="mt-10">
           <h2 className="font-display text-2xl text-cream mb-3 flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" aria-hidden />
             In partnership with
           </h2>
           <p className="text-ink-muted">{event.partners.join(", ")}</p>
+        </section>
+      )}
+
+      {canRsvp && (
+        <section className="mt-12 rounded-2xl border border-line bg-bg-elev p-6 sm:p-8">
+          <h2 className="font-display text-2xl text-cream mb-4">RSVP</h2>
+          <BookingForm eventId={event.id} defaultEmail={user?.email} />
         </section>
       )}
 
@@ -135,24 +158,14 @@ export default async function EventDetailPage({
         >
           Get directions
         </a>
-        {event.externalUrl && (
+        {event.external_url && (
           <a
-            href={event.externalUrl}
+            href={event.external_url}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
           >
             Partner site →
-          </a>
-        )}
-        {event.donateUrl && (
-          <a
-            href={event.donateUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center px-5 py-3 rounded-2xl border border-line text-ink hover:border-primary/40"
-          >
-            Donate
           </a>
         )}
       </div>

@@ -35,10 +35,11 @@ export function Header() {
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* Desktop nav (primary items only; the rest live in the footer + mobile menu) */}
         <nav className="ml-auto hidden md:flex items-center gap-1 text-sm">
-          {site.nav.map((item) =>
-            item.live ? (
+          {site.nav
+            .filter((i) => i.primary && i.live)
+            .map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -46,17 +47,7 @@ export function Header() {
               >
                 {item.label}
               </Link>
-            ) : (
-              <span
-                key={item.href}
-                aria-disabled
-                title="Coming soon"
-                className="px-3 py-2 rounded-md text-ink-muted/40 cursor-not-allowed select-none"
-              >
-                {item.label}
-              </span>
-            ),
-          )}
+            ))}
         </nav>
 
         {/* Mobile menu button */}
@@ -77,7 +68,7 @@ export function Header() {
         id="mobile-nav"
         className={
           "md:hidden border-t border-line overflow-hidden transition-[max-height,opacity] duration-300 ease-out " +
-          (open ? "max-h-96 opacity-100" : "max-h-0 opacity-0")
+          (open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0")
         }
       >
         <nav className="px-4 py-3 flex flex-col">
