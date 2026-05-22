@@ -1,80 +1,123 @@
 # ENTRY_POINTS
 
-## Next.js Dev Server
+## npm Scripts
 
-Path: `package.json` script `dev` → `next dev`
-Responsibility: Local development server with HMR
-Invokes: app/layout.tsx → all app/** routes
-Depends On: next, react, react-dom, tailwindcss
+### dev / build / start / lint
 
-## Next.js Production Build
+Path: `package.json`
+Responsibility: Next.js dev server, prod build, prod server, ESLint
+Depends On: next, tsconfig, ESLint config (incl. react-hooks rules)
 
-Path: `package.json` script `build` → `next build`
-Responsibility: Produces optimized output (.next/), prerenders static routes and SSG slugs
-Invokes: app/**, lib/mdx.ts, lib/weather.ts, content/**
-Depends On: TypeScript, Tailwind v4, next-mdx-remote, gray-matter
+## Middleware
 
-## Next.js Production Server
+Path: `middleware.ts`
+Responsibility: Refreshes Supabase session cookies on every request; redirects unauthenticated users from `/admin/*` and `/account/*` to `/login?next=…`
+Invokes: `@supabase/ssr` createServerClient
+Depends On: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-Path: `package.json` script `start` → `next start`
-Responsibility: Serves built output
-Invokes: .next/ artifacts
-Depends On: build output
+## Root Layout
 
-## Lint
-
-Path: `package.json` script `lint` → `eslint`
-Responsibility: Static analysis (includes react-hooks rules)
-Invokes: eslint.config.mjs
-Depends On: eslint-config-next
-
-## Root Layout (Implicit Entry per Request)
-
-Path: app/layout.tsx
-Responsibility: HTML shell, fonts, viewport + theme metadata, brand chrome (Header, Footer)
-Invokes: components/layout/Header.tsx, components/layout/Footer.tsx, app/globals.css
+Path: `app/layout.tsx`
+Responsibility: HTML shell, fonts, viewport + theme color, Header + Footer
+Invokes: components/layout/{Header,Footer}.tsx, app/globals.css
 Depends On: content/site.ts, next/font/google
 
-## Home Route
+## Marketing Routes
 
-Path: app/page.tsx
-Responsibility: Marketing landing page composition with embedded WeatherWidget
-Invokes: components/marketing/{Hero,WhatWeDo,LocationCard,PartnerStrip}.tsx, components/weather/WeatherWidget.tsx
-Depends On: content/site.ts, lib/weather.ts (transitively)
-Revalidate: 1800s (inherited via WeatherWidget fetch)
+### Home
+Path: `app/page.tsx` (ISR 30 min)
+Invokes: Hero, WhatWeDo, WhatsGrowing, WeatherWidget, LocationCard, PartnerStrip
 
-## Events Index Route
+### Events Index
+Path: `app/events/page.tsx` (ISR 5 min)
+Invokes: lib/events.ts → listPublishedEvents, partitionEvents
 
-Path: app/events/page.tsx
-Responsibility: Lists upcoming and past events from `content/events.ts`
-Invokes: content/events.ts → `partitionEvents()`; components/events/EventCard.tsx
-Depends On: TypeScript event data only (no I/O)
+### Event Detail (SSG when Supabase configured at build; dynamic otherwise)
+Path: `app/events/[slug]/page.tsx`
+Invokes: lib/events.ts → getEventBySlug, listPublishedEventSlugsForBuild; lib/auth.ts; BookingForm
 
-## Event Detail Route (SSG)
+### History Index / Detail
+Path: `app/history/page.tsx`, `app/history/[slug]/page.tsx`
+Invokes: lib/mdx.ts; next-mdx-remote/rsc
 
-Path: app/events/[slug]/page.tsx
-Responsibility: Renders a single event with flyer, meta, highlights, partners, directions
-Invokes: content/events.ts → `getEvent()`, `events` (for `generateStaticParams`)
-Depends On: public/brand/flyer_*.jpg
+### Recipes Index / Detail
+Path: `app/recipes/page.tsx`, `app/recipes/[slug]/page.tsx` (SSG)
+Invokes: lib/recipes.ts; next-mdx-remote/rsc
 
-## History Index Route
+### Shop Index
+Path: `app/shop/page.tsx` (ISR 15 min)
+Invokes: lib/sheets.ts → listFarmStand
 
-Path: app/history/page.tsx
-Responsibility: Lists MDX articles
-Invokes: lib/mdx.ts → listHistoryArticles()
-Depends On: content/history/*.mdx
+### Shop Item Detail (dynamic)
+Path: `app/shop/[sku]/page.tsx`
+Invokes: lib/sheets.ts → listProduce; lib/recipes.ts → listRecipesByIngredient
 
-## History Article Route (SSG)
+### Gallery
+Path: `app/gallery/page.tsx` (ISR 5 min)
+Invokes: lib/gallery.ts → listGalleryPhotos
 
-Path: app/history/[slug]/page.tsx
-Responsibility: Renders a single MDX article; supplies generateStaticParams + generateMetadata
-Invokes: lib/mdx.ts → historySlugs(), getHistoryArticle(); next-mdx-remote/rsc MDXRemote
-Depends On: content/history/*.mdx, gray-matter
+### Weather
+Path: `app/weather/page.tsx` (ISR 30 min)
+Invokes: lib/weather.ts
 
-## Weather Route
+### Contact
+Path: `app/contact/page.tsx`
+Invokes: ContactForm → app/contact/actions.ts → createAdminClient + sendEmail
 
-Path: app/weather/page.tsx
-Responsibility: Renders current conditions, 24h hourly, and 5-day outlook; graceful "Not configured" / service-error states
-Invokes: lib/weather.ts → getCurrent(), getHourly(), getDaily(), weatherConfigured()
-Depends On: OPENWEATHER_API_KEY env var; OpenWeather `/data/2.5/*` endpoints
-Revalidate: 1800s
+### Vendor Application
+Path: `app/vendors/apply/page.tsx`
+Invokes: VendorForm → app/vendors/apply/actions.ts → createAdminClient + sendEmail
+
+## Auth Routes
+
+### Login
+Path: `app/login/page.tsx`
+Responsibility: Magic-link form; redirects authed users to /account or `?next`
+Invokes: LoginForm → app/login/actions.ts → supabase.auth.signInWithOtp
+
+### Callback
+Path: `app/auth/callback/route.ts`
+Responsibility: Exchanges OTP `code` query param for a session
+Invokes: createServerClient → auth.exchangeCodeForSession
+
+### Sign-out
+Path: `app/auth/signout/route.ts`
+Responsibility: Clears Supabase session, redirects home
+
+## Account Route
+
+Path: `app/account/page.tsx`
+Responsibility: Lists current user's RSVPs; sign-out button
+Invokes: lib/auth.ts → getCurrentUser; createServerClient
+
+## Admin Routes (admin role required)
+
+### Layout
+Path: `app/admin/layout.tsx`
+Responsibility: Gate via lib/auth.ts `getCurrentRole` → redirect non-admins to /account; sidebar nav
+Invokes: lib/auth.ts
+
+### Dashboard
+Path: `app/admin/page.tsx`
+Invokes: createAdminClient (head counts on 5 tables)
+
+### List Views
+Paths: `app/admin/{bookings,subscribers,vendors,messages}/page.tsx`
+Invokes: createAdminClient (full reads, paginated to 200)
+
+## API Routes
+
+### Newsletter confirm
+Path: `app/api/newsletter/confirm/route.ts`
+Responsibility: Looks up `confirmation_token`, flips subscriber status from `pending` to `active`, redirects home with status flag
+Invokes: createAdminClient
+
+## Server Actions (not URLs but execution boundaries)
+
+- `app/login/actions.ts` → sendMagicLink
+- `app/events/[slug]/actions.ts` → createBooking
+- `app/actions/newsletter.ts` → subscribeToNewsletter
+- `app/vendors/apply/actions.ts` → submitVendorApplication
+- `app/contact/actions.ts` → sendContactMessage
+
+All validate input with zod, persist via createAdminClient (service-role bypass for guest input), and fire side-effect emails via lib/resend.ts.

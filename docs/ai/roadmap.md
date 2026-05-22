@@ -4,45 +4,58 @@ Forward-looking direction. Pair with tasks.md (active work) and memory.md (histo
 
 ## Vision
 
-Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German Church Rd. The site should make it easy for neighbors to find classes, attend events, learn the history behind the work, and eventually buy produce — while honoring the Black agricultural lineage the farm sits in.
+Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German Church Rd. The platform should make it natural for neighbors to find classes, RSVP to events, learn the history behind the work, get produce — and easy for staff to run the operation without manual spreadsheets, paper RSVPs, or scattered tools. Black-led, neighborhood-first, every feature in service of food sovereignty.
 
 ## Current Focus
 
-**Theme:** v1 brand + content surface online, mobile-first
+**Theme:** Demo Phase 1 MVP to the client; gather feedback; start Phase 2 payments work in parallel where decisions are unblocked.
 **Goals:**
-1. Ship a polished, mobile-responsive marketing surface (home, events, history, weather) — done
-2. Get production deploy stable and fully configured on Vercel — in progress (mobile PR pending merge, env vars set)
-3. Decide what feature ships next based on real visitor / partner needs
+1. Get Phase 1 MVP merged + deployed on Vercel with Supabase + auth working end-to-end
+2. Walk the client through the demo and capture feedback on ticket model, refund policy, day-of-ops scope, and CSA pricing
+3. Begin Phase 2 (Stripe + paid tickets + farm-stand checkout + CSA) once those decisions are firm
 
 ## Now
 
-- Merge `feat/mobile-responsive` → `main`; verify Vercel preview on a real phone
-- Rotate the shared OpenWeather API key
+- Merge `perry-v2 → main` after the client provisions Supabase/Resend and verifies the live deploy
+- Resend account + domain verification — currently blocking confirmation emails
+- Google Sheets + service account — currently blocking the produce strand
+- Rotate the dev Supabase + OpenWeather keys that have appeared in chat
+- Client walk-through of the deployed site
 
 ## Next
 
-- **Classes**: dedicated `/classes` route — schedule + registration. Currently a "coming soon" item in nav.
-- **Donations**: simple Stripe-hosted donate flow surfaced on event detail pages and a `/support` route. The Grand Opening flyer already had a "DONATE" CTA, so visitor expectation exists.
-- **Second history article**: profile of a local grower or technique (composting, season extension, native plantings).
+- **Phase 2 — Payments + Write paths:**
+  - Stripe (test mode → live) with Checkout Sessions for tickets and one-time farm-stand orders, Subscriptions for CSA
+  - Migrations for ticket_types, orders, tickets, shop_orders, shop_order_items, csa_plans, csa_memberships, csa_pickups, wholesale_buyers, wholesale_orders, wholesale_order_items
+  - QR-coded ticket emails on `checkout.session.completed` webhook
+  - Full admin CRUD: event editor, vendor approval action that creates a `vendor_profiles` row + lights up the public directory at `/vendors`, refund flow
+  - File uploads for vendor logos + gallery photos via Supabase Storage signed URLs
 
 ## Later
 
-- **Shop / produce ordering**: real checkout. Probably Stripe + a thin product list in TypeScript first, headless commerce only if catalog grows.
-- **Email capture / newsletter**: low-effort mailing list before a full subscription model.
-- **Headless CMS**: only if a non-technical editor joins the project. MDX-in-repo is fine until then.
-- **Class registration**: integrates with `/classes`; needs accounts or magic links.
-- **Photo essays / gallery**: visual story of events on the land.
+- **Phase 3 — Day-of operations** (scope chosen by client):
+  - QR check-in (`/admin/scan`) — camera + `qr-scanner` lib
+  - Live attendance dashboard via Supabase Realtime
+  - Vendor day-of list with booth assignments
+  - Run-of-show schedule view
+- Wholesale order portal for partner stores/restaurants
+- Photo essays per past event (extend gallery with `event_id`)
+- Membership / supporter wall with public list of monthly donors
+- Seed library + produce share calendar
+- Press / media kit at `/press`
 
 ## Recently Completed
 
-- Mobile-responsive pass across all routes — 2026-05-13
-- OpenWeather production env var set; live weather rendering on prod — 2026-05-13
-- Events page with three seed events (Grand Opening, Earth Day, Values & Ethics) — 2026-05-12
-- "Black History in Farming" article — 2026-05-12
-- OpenWeather integration (current + hourly + daily) with home widget — 2026-05-12
+- Phase 1 MVP — Supabase + auth + RSVP + produce + recipes + newsletter + gallery + vendor + contact + admin — 2026-05-22
+- Mobile-responsive pass — 2026-05-13
+- OpenWeather production env var set; live weather on prod — 2026-05-13
+- Events page with 3 seed events from the flyers — 2026-05-12
+- Black History in Farming article — 2026-05-12
+- OpenWeather integration (current + hourly + daily) — 2026-05-12
 - v1 foundation (home, history, brand chrome) — 2026-05-11
 
 ## Deferred / Cancelled
 
-- **Open-Meteo provider abstraction in `lib/weather.ts`** — built and merged as a stopgap while the OpenWeather key activated, then reverted to single-provider OpenWeather to keep the lib simple. Could be reintroduced if API reliability becomes an issue.
-- **`develop` long-lived branch** — created in the original git workflow but in practice every feature has gone through PRs straight into `main`. Will likely be deleted or repurposed.
+- **Open-Meteo provider abstraction in `lib/weather.ts`** — built as a stopgap during OpenWeather key activation; reverted to single-provider once OpenWeather went live.
+- **`develop` long-lived branch** — deleted; the workflow consolidated to a single `perry-v2` working branch off `main`.
+- **`feat/*` historical branches** — deleted after merge; single working branch model adopted.

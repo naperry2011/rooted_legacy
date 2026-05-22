@@ -1,81 +1,125 @@
 # DATA_FLOW
 
-## Home Page Render
+## Authenticated Request Lifecycle
 
-Source: Request to `/`
-Transport: Next.js App Router (RSC) with ISR (30 min)
-Processor: app/page.tsx → marketing components + WeatherWidget
-Storage: content/site.ts (constants); OpenWeather API (live)
-Downstream Consumers: Prerendered HTML response
+Source: Browser request with auth cookies
+Transport: middleware.ts → `@supabase/ssr` cookie refresh → response
+Processor: Next.js App Router dispatches to RSC
+Storage: Supabase auth.users (managed by Supabase Auth)
+Downstream Consumers: RSC reads via createServerClient (cookies); writes via createAdminClient (service role)
 
-## Events Index Render
+## Magic-link Sign-in
 
-Source: Static request to `/events`
-Transport: Next.js App Router (RSC), prerendered at build
-Processor: app/events/page.tsx → content/events.ts `partitionEvents(today)`
-Storage: content/events.ts (TypeScript array)
-Downstream Consumers: HTML grid of EventCard components
+Source: `/login` form submit
+Transport: Server action `sendMagicLink` → `supabase.auth.signInWithOtp({ email, emailRedirectTo: /auth/callback })`
+Processor: Supabase Auth sends email
+Storage: auth.users (created on first sign-in)
+Downstream Consumers: User clicks email link → `/auth/callback?code=…` → `exchangeCodeForSession` → cookie set → redirect to `next` or `/account`. Trigger `handle_new_user` creates a `profiles` row.
 
-## Event Detail Render (SSG)
+## Event Listing / Detail Render
 
-Source: Request to `/events/[slug]`
-Transport: Next.js App Router (RSC), prerendered via `generateStaticParams`
-Processor: content/events.ts `getEvent(slug)`
-Storage: content/events.ts
-Downstream Consumers: HTML article page with flyer image, meta row, highlights, CTAs
+Source: `/events` or `/events/[slug]`
+Transport: Public Supabase client (anon key, no cookies) — safe for build + RSC
+Processor: lib/events.ts → SELECT from `events` WHERE status='published'
+Storage: Supabase Postgres `events` table
+Downstream Consumers: EventCard grid; BookingForm gated by `kind='free_rsvp'` and date >= today
 
-## History Index Render
+## RSVP Booking
 
-Source: Static request to `/history`
-Transport: Next.js App Router (RSC), prerendered at build
-Processor: app/history/page.tsx → lib/mdx.ts → fs.readdir(content/history)
-Storage: content/history/*.mdx (frontmatter parsed by gray-matter)
-Downstream Consumers: HTML list of article links
+Source: BookingForm submit on event detail page
+Transport: Server action `createBooking` (zod-validated)
+Processor:
+  1. Verify event exists + published
+  2. createAdminClient INSERT into `bookings`
+  3. lib/resend.ts → sendEmail confirmation
+  4. revalidatePath(/events/[slug], /account)
+Storage: Supabase `bookings`; Resend (email)
+Downstream Consumers: /account (user's own); /admin/bookings (admin)
 
-## History Article Render (SSG)
+## Newsletter Signup (double opt-in)
 
-Source: Request to `/history/[slug]`
-Transport: Next.js App Router (RSC), prerendered via `generateStaticParams`
-Processor: lib/mdx.ts → fs.readFile → gray-matter → next-mdx-remote/rsc MDXRemote
-Storage: content/history/<slug>.mdx
-Downstream Consumers: HTML article page
+Source: NewsletterSignup form
+Transport: Server action `subscribeToNewsletter`
+Processor:
+  1. createAdminClient UPSERT into `subscribers` (status=pending, generates `confirmation_token`)
+  2. sendEmail with confirm link
+Storage: Supabase `subscribers`
+Downstream Consumers: `/api/newsletter/confirm?token=…` route handler flips status to `active` and sets `confirmed_at`
+
+## Vendor Application
+
+Source: VendorForm submit at `/vendors/apply`
+Transport: Server action `submitVendorApplication`
+Processor:
+  1. createAdminClient INSERT into `vendor_applications` (status=pending)
+  2. sendEmail to CONTACT_TO_EMAIL (admin notify, replyTo=applicant)
+  3. sendEmail acknowledgement to applicant
+Storage: Supabase `vendor_applications`; Resend
+Downstream Consumers: /admin/vendors
+
+## Contact Message
+
+Source: ContactForm submit at `/contact`
+Transport: Server action `sendContactMessage`
+Processor:
+  1. createAdminClient INSERT into `contact_messages`
+  2. sendEmail to CONTACT_TO_EMAIL (replyTo=sender)
+Storage: Supabase `contact_messages`; Resend
+Downstream Consumers: /admin/messages
+
+## Produce Catalog (Google Sheets)
+
+Source: Spreadsheet maintained by farm staff
+Transport: lib/sheets.ts → googleapis JWT auth → spreadsheets.values.get
+Processor: Header-row mapping → ProduceItem[]; cached via `unstable_cache` with revalidate=900s, tag="produce"
+Storage: Google Sheets (remote); Next.js fetch cache (in-memory)
+Downstream Consumers: /shop catalog (`farmstand=Y && in_season=Y && qty>0`); /shop/[sku] detail (full list); home WhatsGrowing widget (`in_season=Y`)
+
+## Recipe Cross-Reference
+
+Source: content/recipes/*.mdx frontmatter `ingredients`
+Transport: lib/recipes.ts → fs.readFile + gray-matter
+Processor: listRecipesByIngredient does substring match on ingredient name vs each recipe's ingredients array
+Storage: Filesystem at build
+Downstream Consumers: /shop/[sku] "Cook with this" section
+
+## Gallery Render
+
+Source: `/gallery` request
+Transport: Public Supabase client SELECT from `gallery_photos`
+Processor: lib/gallery.ts resolves each `path`:
+  - http(s):// → use as-is
+  - /...       → local /public asset
+  - else       → Supabase Storage `gallery` bucket getPublicUrl
+Storage: Supabase Postgres + Storage; or /public for legacy seed rows
+Downstream Consumers: HTML masonry grid
+
+## Admin Reads
+
+Source: /admin/* page request (admin role enforced in layout)
+Transport: createAdminClient (service role)
+Processor: SELECT … ORDER BY created_at DESC LIMIT 200
+Storage: Supabase Postgres
+Downstream Consumers: DataTable rendering
+
+## Email Sending (universal)
+
+Source: Any server action's email step
+Transport: lib/resend.ts → @resend SDK
+Processor: Wraps body in branded HTML shell; soft no-op + warning log when RESEND_API_KEY unset
+Storage: Resend (sent log); recipient inbox
+Downstream Consumers: End user
 
 ## Weather Render
 
-Source: Request to `/weather` or home page
-Transport: Next.js App Router (RSC) with ISR (30 min) + fetch cache tag `weather`
-Processor: lib/weather.ts → fetch OpenWeather → mapping to `CurrentWeather` / `ForecastSlot` / `DailyForecast`
-Storage: OpenWeather `/data/2.5/weather`, `/data/2.5/forecast` (remote)
-Downstream Consumers: app/weather/page.tsx (full forecast); components/weather/WeatherWidget.tsx (home)
+Source: `/` or `/weather`
+Transport: lib/weather.ts → fetch OpenWeather with `next.revalidate: 1800` + tag "weather"
+Storage: Remote OpenWeather; Next.js fetch cache
+Downstream Consumers: WeatherWidget on home; full /weather page
 
-## Site-Wide Copy / Nav
+## Environment / Secrets Flow
 
-Source: content/site.ts
-Transport: ES module import
-Processor: Header, Footer, marketing components, layout metadata
-Storage: TypeScript constants
-Downstream Consumers: All routes
-
-## Brand Assets
-
-Source: public/brand/*
-Transport: Next.js static asset pipeline (next/image for logo; `unoptimized` for OpenWeather icons)
-Processor: components/brand/Logo.tsx, Hero, layout metadata, event detail
-Storage: public/ directory
-Downstream Consumers: Browser
-
-## Fonts
-
-Source: Google Fonts (Cormorant Garamond, Inter)
-Transport: next/font/google (build-time fetch + self-hosted at build)
-Processor: app/layout.tsx
-Storage: .next/static/media
-Downstream Consumers: All routes via CSS variables `--font-display`, `--font-sans`
-
-## Environment / Secrets
-
-Source: Vercel project env vars (production) / `.env.local` (dev)
-Transport: process.env
-Processor: lib/weather.ts (`OPENWEATHER_API_KEY`, optional `WEATHER_LAT` / `WEATHER_LON` / `WEATHER_UNITS`)
-Storage: Vercel-managed; `.env.local` gitignored
-Downstream Consumers: Server-side fetches in lib/weather.ts only
+Source: Vercel project env vars (prod / preview); `.env.local` (dev — gitignored)
+Transport: process.env at server boundary
+Processor: Every lib/* file gates on its required vars and degrades gracefully when missing
+Downstream Consumers: Supabase, Stripe (Phase 2), Resend, Google Sheets, OpenWeather

@@ -10,6 +10,7 @@ import {
 } from "@/lib/events";
 import { getCurrentUser } from "@/lib/auth";
 import { BookingForm } from "@/components/events/BookingForm";
+import { site } from "@/content/site";
 
 type Params = { slug: string };
 
@@ -138,7 +139,29 @@ export default async function EventDetailPage({
             <Users className="h-5 w-5 text-primary" aria-hidden />
             In partnership with
           </h2>
-          <p className="text-ink-muted">{event.partners.join(", ")}</p>
+          <p className="text-ink-muted flex flex-wrap gap-x-1">
+            {event.partners.map((name, i) => {
+              const partner = site.partners.find((p) => p.name === name);
+              const trailing = i < event.partners.length - 1 ? "," : "";
+              return partner?.url ? (
+                <a
+                  key={name}
+                  href={partner.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:text-cream underline-offset-4 hover:underline"
+                >
+                  {name}
+                  {trailing}
+                </a>
+              ) : (
+                <span key={name}>
+                  {name}
+                  {trailing}
+                </span>
+              );
+            })}
+          </p>
         </section>
       )}
 
