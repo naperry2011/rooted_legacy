@@ -48,12 +48,6 @@ export function LoginForm({ next }: { next?: string }) {
       <SubmitButton pending={pending} className="w-full sm:w-auto">
         Sign in
       </SubmitButton>
-
-      <p className="text-sm text-ink-muted">
-        <Link href="/reset-password" className="text-primary hover:underline">
-          Forgot your password?
-        </Link>
-      </p>
     </form>
   );
 }
