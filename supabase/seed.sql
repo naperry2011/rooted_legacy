@@ -1,12 +1,32 @@
--- Rooted Legacy — local + initial Supabase seed
+-- Rooted Legacy — local + initial Supabase seed.
 -- Run after migrations. Safe to re-run (uses on conflict).
 
 -- ---------- events ----------
 
 insert into public.events
   (slug, title, summary, date, start_time, end_time, location, flyer_path,
-   status, kind, highlights, partners)
+   status, kind, highlights, partners,
+   tagline, price_cents, themes, included_perks, is_featured)
 values
+  (
+    'soothing-sundays',
+    'Soothing Sundays',
+    'A day to root, restore, and reconnect on the farm. Yoga, a sound-bowl session, community planting, and a plant sale — all set against an afternoon at 865 N German Church Rd.',
+    '2026-05-24',
+    '11:00',
+    '16:00',
+    '865 N German Church Rd, Indianapolis, IN 46229',
+    '/brand/flyer_soothing_sundays.jpg',
+    'published',
+    'ticketed',
+    '["Yoga","Sound-bowl session","Community planting","Plant sale"]'::jsonb,
+    '["Bodi Buzz"]'::jsonb,
+    'Root. Restore. Reconnect.',
+    2000,
+    '["Nourish your body","Calm your mind","Grow together"]'::jsonb,
+    '["Seeded watermelon slices","Beverage"]'::jsonb,
+    true
+  ),
   (
     'urban-farm-grand-opening',
     'Urban Farm Grand Opening',
@@ -19,7 +39,12 @@ values
     'published',
     'free_rsvp',
     '["Wellness vendors","A1C + BP checks","Gardening classes","Art & crafts","Live entertainment","Starter plants","Yoga + fitness class","Keynote speaker"]'::jsonb,
-    '["Bodi Buzz"]'::jsonb
+    '["Bodi Buzz"]'::jsonb,
+    null,
+    null,
+    '[]'::jsonb,
+    '[]'::jsonb,
+    false
   ),
   (
     'earth-day-everyday',
@@ -33,7 +58,12 @@ values
     'published',
     'free_rsvp',
     '[]'::jsonb,
-    '["Bodi Buzz"]'::jsonb
+    '["Bodi Buzz"]'::jsonb,
+    null,
+    null,
+    '[]'::jsonb,
+    '[]'::jsonb,
+    false
   ),
   (
     'values-and-ethics',
@@ -47,38 +77,57 @@ values
     'published',
     'external',
     '[]'::jsonb,
-    '["Cre8tive Alignment Network"]'::jsonb
+    '["Cre8tive Alignment Network"]'::jsonb,
+    null,
+    null,
+    '[]'::jsonb,
+    '[]'::jsonb,
+    false
   )
 on conflict (slug) do update set
-  title       = excluded.title,
-  summary     = excluded.summary,
-  date        = excluded.date,
-  start_time  = excluded.start_time,
-  end_time    = excluded.end_time,
-  location    = excluded.location,
-  flyer_path  = excluded.flyer_path,
-  status      = excluded.status,
-  kind        = excluded.kind,
-  highlights  = excluded.highlights,
-  partners    = excluded.partners,
-  updated_at  = now();
+  title          = excluded.title,
+  summary        = excluded.summary,
+  date           = excluded.date,
+  start_time     = excluded.start_time,
+  end_time       = excluded.end_time,
+  location       = excluded.location,
+  flyer_path     = excluded.flyer_path,
+  status         = excluded.status,
+  kind           = excluded.kind,
+  highlights     = excluded.highlights,
+  partners       = excluded.partners,
+  tagline        = excluded.tagline,
+  price_cents    = excluded.price_cents,
+  themes         = excluded.themes,
+  included_perks = excluded.included_perks,
+  is_featured    = excluded.is_featured,
+  updated_at     = now();
 
--- external_url for the Cre8tive event
 update public.events
    set external_url = 'https://cre8tivealignmentnetwork.org'
  where slug = 'values-and-ethics';
 
 -- ---------- gallery_photos ----------
--- Paths assume files are uploaded to the `gallery` Supabase Storage bucket.
--- The four client photos go to gallery/client_*.jpg; existing flyers/logo
--- can stay under public/brand/ and we render them via local /brand paths.
--- For simplicity, we point gallery rows at the existing public/brand/ files
--- the MVP can render without requiring uploads yet. Migrate later.
-
+-- Flyers + the brand mark, served from /public/brand/
 insert into public.gallery_photos (path, alt, caption, sort_order)
 values
   ('/brand/rooted_legacy_logo.jpg',     'Rooted Legacy logo',                         'The Rooted Legacy mark', 1),
-  ('/brand/flyer_grand_opening.jpg',    'Urban Farm Grand Opening flyer',             'Grand Opening — May 16', 2),
-  ('/brand/flyer_earth_day.jpg',        'Earth Day Everyday flyer',                   'Earth Day Everyday — April 25', 3),
-  ('/brand/partner_cre8tive.jpg',       'Cre8tive Alignment Network — Values & Ethics','Partner programming', 4)
+  ('/brand/flyer_soothing_sundays.jpg', 'Soothing Sundays flyer',                     'Soothing Sundays — May 24', 2),
+  ('/brand/flyer_grand_opening.jpg',    'Urban Farm Grand Opening flyer',             'Grand Opening — May 16', 3),
+  ('/brand/flyer_earth_day.jpg',        'Earth Day Everyday flyer',                   'Earth Day Everyday — April 25', 4),
+  ('/brand/partner_cre8tive.jpg',       'Cre8tive Alignment Network — Values & Ethics','Partner programming', 5)
+on conflict do nothing;
+
+-- Event photos from the Grand Opening, linked to the event.
+-- Files live in /public/gallery/ — save these locally before re-running this seed.
+insert into public.gallery_photos (path, alt, caption, sort_order, event_id)
+select
+  v.path, v.alt, v.caption, v.sort_order, e.id
+from (values
+  ('/gallery/grand-opening-class.jpg',         'Outdoor class on the farm',           'Outdoor class on the farm',           10),
+  ('/gallery/grand-opening-vendors-tents.jpg', 'Vendor tents on the green',           'Vendor market on the green',          11),
+  ('/gallery/grand-opening-vendors-row.jpg',   'Vendor row with FREE consultation sign','Free wellness consultations',       12),
+  ('/gallery/grand-opening-pure-trition.jpg',  'Pure-trition juice and smoothie truck','Pure-trition juice + smoothie truck', 13)
+) as v(path, alt, caption, sort_order)
+join public.events e on e.slug = 'urban-farm-grand-opening'
 on conflict do nothing;

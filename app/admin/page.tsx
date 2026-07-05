@@ -55,8 +55,11 @@ export default async function AdminDashboard() {
     <div>
       <h1 className="font-display text-4xl text-primary mb-2">Dashboard</h1>
       <p className="text-ink-muted mb-8">
-        Read-only for the MVP. Use Supabase Studio for inserts and edits until
-        Phase 2 admin tools land.
+        Manage events from the{" "}
+        <Link href="/admin/events" className="text-primary hover:underline">
+          Events
+        </Link>{" "}
+        tab — create, edit, cancel, or delete, and view RSVPs per event.
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -76,7 +79,11 @@ export default async function AdminDashboard() {
           value={c.messages}
           href="/admin/messages"
         />
-        <Stat label="Published events" value={c.publishedEvents} />
+        <Stat
+          label="Published events"
+          value={c.publishedEvents}
+          href="/admin/events"
+        />
       </div>
     </div>
   );

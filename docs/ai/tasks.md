@@ -4,32 +4,46 @@ Active work. Update as items are completed and new work is identified.
 
 ## Sprint / Iteration
 
-**Range:** 2026-05-11 to 2026-05-17
-**Goal:** Ship mobile-responsive v1 to production, decide on the next feature
+**Range:** 2026-05-22 to 2026-05-29
+**Goal:** Wrap Phase 1 MVP, get image assets in, walk client through demo, line up Phase 2.
 
 ## In Progress
 
-- [ ] Merge `feat/mobile-responsive` → `main` and verify Vercel deploy on a phone — Nicholas — PR open
+- [ ] User saves the 5 image files + commits — Nicholas
+  - `public/brand/flyer_soothing_sundays.jpg`
+  - `public/gallery/grand-opening-class.jpg`
+  - `public/gallery/grand-opening-vendors-tents.jpg`
+  - `public/gallery/grand-opening-vendors-row.jpg`
+  - `public/gallery/grand-opening-pure-trition.jpg`
 
 ## Up Next
 
-- [ ] Rotate the OpenWeather API key currently in `.env.local` (it's in chat history) — small
-- [ ] Decide the next feature: Classes vs. Donations vs. second History article — small (decision only)
-- [ ] Delete or repurpose stale `develop` branch — trivial
+- [ ] Verify Vercel deploy renders fully once images land (Soothing Sundays flair, "From the day" gallery, /about hero, Pure-trition card, default OG) — Claude
+- [ ] Open PR `perry-v2 → main` and merge — small
+- [ ] Rotate Supabase publishable + secret keys + OpenWeather key in Vercel after merge — small
+- [ ] Client demo walk-through — small
+- [ ] Decide Phase 2 ticket model (free RSVP vs paid vs tiered vs pay-what-you-can) — decision only
+- [ ] Decide refund policy — decision only
+- [ ] Decide CSA pricing + cadence — decision only
+- [ ] Decide day-of-ops scope — decision only
 
 ## Blocked
 
-- _none_
+- [ ] Resend confirmation emails — blocked on `RESEND_API_KEY`
+- [ ] Google Sheets produce strand — blocked on `GOOGLE_SHEETS_ID` + `GOOGLE_SERVICE_ACCOUNT_JSON`
+- [ ] Stripe ticketing — blocked on client ticket-model decisions
 
 ## Recently Completed
 
-- [x] Full mobile-responsive pass (hamburger menu, weather 5-day grid, stacked CTAs) — 2026-05-13
-- [x] Set `OPENWEATHER_API_KEY` in Vercel project env vars — 2026-05-13
-- [x] Add Open-Meteo provider, then revert to OpenWeather only — 2026-05-12
-- [x] Add OpenWeather integration (`/weather` + home widget) — 2026-05-12
-- [x] Build `/events` index + 3 detail pages from flyer set — 2026-05-12
-- [x] Write "Black History in Farming" MDX article — 2026-05-12
-- [x] Scaffold Next.js 15 + Tailwind v4 foundation — 2026-05-11
+- [x] About page with class-photo hero + 3-value strip — 2026-05-22
+- [x] /vendors directory + Pure-trition card — 2026-05-22
+- [x] Default OG image switched to community photo + Twitter card — 2026-05-22
+- [x] Soothing Sundays event + featured-event flair (schema + detail page) — 2026-05-22
+- [x] Event photos linked via event_id; "From the day" grid on event detail — 2026-05-22
+- [x] Bodi Buzz partner enrichment (services, tagline, IG, email) — 2026-05-22
+- [x] Plan revised to MVP-first / process delivery — 2026-05-22
+- [x] Phase 1 MVP shipped on `perry-v2` (63 files, +4,418 lines) — 2026-05-22
+- [x] Branch consolidation — 2026-05-22
 
 ## Bugs
 
@@ -37,7 +51,11 @@ Active work. Update as items are completed and new work is identified.
 
 ## Tech Debt
 
-- [ ] `develop` branch never caught up to `main`; workflow has shifted to PRs straight into `main`. Either delete `develop` or fast-forward it. — Low impact
-- [ ] No automated tests (unit, e2e, or visual). For v1 marketing surface this is fine; revisit before adding interactive features (registration, checkout). — Medium impact when dynamic features land
-- [ ] Brand tokens are referenced as Tailwind utility strings repo-wide; a rename requires text-wide find/replace. Could be partly mitigated by Tailwind's semantic `@theme` aliases. — Low impact
-- [ ] FEATURE_SPEC.md predates the events/weather build and reads as forward-looking; rewrite or split into "what shipped" vs "what's planned" (overlap with roadmap.md). — Low impact
+- [ ] `lib/supabase/types.ts` hand-maintained — drifts every migration. Switch to `supabase gen types typescript` once Phase 2 schema stabilizes. Medium impact.
+- [ ] No automated tests yet. Add Vitest unit tests for `lib/sheets.ts` parsing + Playwright e2e for the RSVP flow before launch. Medium impact.
+- [ ] Dev keys (Supabase, OpenWeather) in chat history. Rotate before public launch. Medium / security.
+- [ ] `FEATURE_SPEC.md` is stale; consider folding into `docs/ai/roadmap.md` or deleting. Low impact.
+- [ ] `content/vendors.ts` is a typed array MVP placeholder; in Phase 2 promote to DB-backed `vendor_profiles` so admin can approve applications → directory. Low impact for now.
+- [ ] `gallery_photos.path` column overloads `/public/...` and Supabase Storage paths. Add a `source` enum in Phase 2 or normalize via a stricter resolver. Low.
+- [ ] "Tickets opening soon" CTA on Soothing Sundays is a placeholder until Stripe ships. Make sure it doesn't ship to prod without a real flow if the event date approaches. Medium / time-sensitive.
+- [ ] Brand tokens hard-coded as Tailwind class strings repo-wide. Low.

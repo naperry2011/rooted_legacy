@@ -2,84 +2,143 @@
 
 ## Site Shell (app/layout.tsx + components/layout/*)
 
-Owns: HTML document, font variables, header (desktop + mobile menu), footer, root metadata, viewport + theme color
-Does NOT Own: Page bodies, MDX rendering, route-specific metadata, weather/event data
-Communicates With: content/site.ts (nav, partners, address); app/globals.css (tokens)
+Owns: HTML document, fonts, viewport + theme color, header (desktop primary nav + mobile hamburger), footer (newsletter signup + secondary nav), root metadata, default OG image + Twitter card
+Does NOT Own: Page bodies, auth state UI, data fetches
+Communicates With: content/site.ts; app/globals.css; NewsletterSignup
+Isolation Level: Strong
+
+## About / Our Story (app/about/page.tsx)
+
+Owns: Photo-hero story page that ties the farm's mission to the Black agricultural heritage thread
+Does NOT Own: Long-form history articles (delegated to /history)
+Communicates With: content/site.ts (description, address); public/gallery/grand-opening-class.jpg; links to /history/black-history-in-farming, /events, /contact
+Isolation Level: Strong
+
+## Auth (app/login/* + app/auth/* + middleware.ts + lib/auth.ts)
+
+Owns: Magic-link sign-in flow, session refresh, role resolution, route gating for /admin and /account
+Communicates With: Supabase Auth + profiles table; ADMIN_EMAIL_ALLOWLIST
+Isolation Level: Strong
+
+## Account (app/account/*)
+
+Owns: Logged-in visitor surface — RSVP list + sign-out
+Communicates With: lib/auth.ts; own bookings via createServerClient
 Isolation Level: Strong
 
 ## Marketing Home (app/page.tsx + components/marketing/*)
 
-Owns: Hero, WhatWeDo, LocationCard, PartnerStrip composition for `/`
-Does NOT Own: Weather data (uses WeatherWidget but doesn't fetch), history content, layout chrome, persistence
-Communicates With: content/site.ts; public/brand/*; components/weather/WeatherWidget.tsx (embed)
+Owns: Home composition (Hero, WhatWeDo, WhatsGrowing + WeatherWidget side-by-side, LocationCard, PartnerStrip)
+Does NOT Own: Weather/produce data fetching
+Communicates With: content/site.ts; public/brand/*
 Isolation Level: Strong
 
-## Events (app/events/* + components/events/* + content/events.ts)
+## Events + Featured-event flair (app/events/* + components/events/* + lib/events.ts)
 
-Owns: Typed event list, upcoming/past partitioning, formatting helpers, EventCard, index + detail rendering, SSG slug generation
-Does NOT Own: Calendar persistence, RSVP, ticketing (no CMS or DB yet)
-Communicates With: public/brand/flyer_*.jpg; Google Maps (directions link)
+Owns: DB-backed event listing/detail; RSVP form with zod validation; confirmation email; **featured-event treatment** (radial glow, tagline, themes pillars, price + perks card); "Tickets opening soon" CTA for ticketed events
+Does NOT Own: Calendar persistence (Supabase), email delivery (Resend), payments (Phase 2), event-linked photos (delegated to gallery)
+Communicates With: Supabase events + bookings; Resend; content/site.ts (partner link lookup); lib/gallery.ts (event photos)
 Isolation Level: Strong
 
-## History (app/history/* + lib/mdx.ts + content/history/*)
+## Vendor Directory (app/vendors/page.tsx + content/vendors.ts + components/vendors/VendorCard.tsx)
 
-Owns: MDX discovery, frontmatter parsing, article listing, article rendering, SSG slug generation, article-page typography overrides
-Does NOT Own: Layout chrome, runtime content editing (no CMS), events
-Communicates With: content/history/*.mdx (filesystem); next-mdx-remote/rsc
+Owns: Public-facing directory of long-term partners (sourced from `site.partners`) and featured vendors (sourced from `featuredVendors` in content/vendors.ts). Routes back to /events and /vendors/apply.
+Does NOT Own: Vendor applications (delegated to /vendors/apply); vendor approval (Phase 2)
+Communicates With: content/site.ts, content/vendors.ts, public/gallery/grand-opening-pure-trition.jpg
+Isolation Level: Strong (read-only consumer of static data)
+
+## Vendor Application (app/vendors/apply/*)
+
+Owns: Application form + acceptance/notification emails
+Communicates With: Supabase vendor_applications; Resend
+Isolation Level: Strong
+
+## Produce / Farm Stand (app/shop/* + components/produce/* + lib/sheets.ts)
+
+Owns: Google Sheets reader + 15-min cache, /shop catalog, /shop/[sku] detail, home WhatsGrowing widget
+Communicates With: Google Sheets API; lib/recipes.ts for cross-links
+Isolation Level: Strong
+
+## Recipes (app/recipes/* + lib/recipes.ts + content/recipes/*.mdx)
+
+Owns: MDX recipe discovery + rendering; ingredient cross-reference for shop items
+Communicates With: filesystem; next-mdx-remote/rsc
+Isolation Level: Strong
+
+## History (app/history/* + lib/mdx.ts + content/history/*.mdx)
+
+Owns: MDX article rendering
+Communicates With: filesystem; next-mdx-remote/rsc
+Isolation Level: Strong
+
+## Newsletter (components/marketing/NewsletterSignup.tsx + app/actions/newsletter.ts + app/api/newsletter/confirm/route.ts)
+
+Owns: Signup form, double-opt-in flow, confirmation token redemption
+Communicates With: Supabase subscribers; Resend
+Isolation Level: Strong
+
+## Contact (app/contact/*)
+
+Owns: Public contact form
+Communicates With: Supabase contact_messages; Resend
+Isolation Level: Strong
+
+## Gallery (app/gallery/* + lib/gallery.ts)
+
+Owns: Photo listing for `/gallery`, per-event photo lookup (`listPhotosForEvent`), path resolution for local /public + Supabase Storage URLs
+Does NOT Own: Uploads (Phase 2)
+Communicates With: Supabase gallery_photos + Storage; event detail pages
+Isolation Level: Strong
+
+## Admin (app/admin/* + components/admin/*)
+
+Owns: Role-gated dashboard, read-only list views (bookings, subscribers, vendors, messages)
+Does NOT Own: Edit workflows (Phase 2)
+Communicates With: createAdminClient; lib/auth.ts requireAdmin
 Isolation Level: Strong
 
 ## Weather (app/weather/* + components/weather/* + lib/weather.ts)
 
-Owns: OpenWeather fetch + mapping, ISR cache (30 min via `next.revalidate`), configured/unreachable fallback states, current + hourly + daily UI, home widget
-Does NOT Own: Auth, env-var validation beyond presence check, weather alerts
-Communicates With: OpenWeather API; `OPENWEATHER_API_KEY` + optional lat/lon env vars
-Isolation Level: Strong (server-only via `import "server-only"` in lib)
-
-## Brand Tokens (app/globals.css)
-
-Owns: CSS custom properties for color, font variables, paper-grain utility, base background gradients, `overflow-x: hidden` safety
-Does NOT Own: Component markup, font loading (handled by app/layout.tsx)
-Communicates With: Every Tailwind utility class referencing `bg-*`, `text-*`, `border-*` tokens
-Isolation Level: Moderate (shared vocabulary across all UI files)
-
-## Site Copy (content/site.ts)
-
-Owns: Org name, tagline, description, URL, address, socials, partners, nav structure (with `live` flag per item)
-Does NOT Own: Event data, history articles, weather data, rendered markup, styling
-Communicates With: Layout shell + all marketing components + weather page header
-Isolation Level: Moderate (broad fan-in)
-
-## MDX Loader (lib/mdx.ts)
-
-Owns: Filesystem access for content/history/, frontmatter typing, slug enumeration
-Does NOT Own: MDX→HTML rendering (delegated to next-mdx-remote/rsc), styling, event content
-Communicates With: app/history/page.tsx, app/history/[slug]/page.tsx
+Owns: OpenWeather fetch + mapping + ISR; /weather page; home widget
+Communicates With: OpenWeather
 Isolation Level: Strong
 
-## Brand Assets (public/brand/*)
+## Supabase Layer (lib/supabase/*, supabase/*)
 
-Owns: Logo, flyer images (Earth Day, Grand Opening, partner Cre8tive)
-Does NOT Own: Image rendering logic, alt text (defined in consumers)
-Communicates With: components/brand/Logo.tsx, Hero, event detail page, layout metadata
+Owns: 4 client variants + hand-written Database type + migrations (0001_init.sql, 0002_event_flair.sql) + seed
+Communicates With: Every feature that touches the DB
 Isolation Level: Strong
 
-## Build / Tooling (package.json, next.config.ts, tsconfig.json, eslint.config.mjs, postcss.config.mjs)
+## Email Layer (lib/resend.ts)
 
-Owns: Dependency graph, scripts, TypeScript config, ESLint (incl. react-hooks rules), PostCSS/Tailwind v4 wiring, path alias `@/*`
-Does NOT Own: Runtime behavior, brand tokens, content
-Communicates With: All source files (compile-time)
+Owns: Resend SDK wrapper, branded HTML envelope, soft no-op when key missing
+Communicates With: Resend; every server action that sends email
 Isolation Level: Strong
 
-## Deployment (Vercel)
+## Forms Layer (components/forms/fields.tsx + lib/validations/*.ts)
 
-Owns: Production hosting, environment variables (`OPENWEATHER_API_KEY` etc.), automatic deploys from `main`
-Does NOT Own: Source-of-truth code (lives in GitHub), local secrets (live in `.env.local`)
-Communicates With: GitHub repo, OpenWeather API at runtime
+Owns: Shared Input/Textarea/Field/SubmitButton/FormAlert primitives; zod schemas reused between client + server
+Communicates With: Every form component + server action
 Isolation Level: Strong
 
-## Deferred (Scaffolded but Unimplemented)
+## Build / Tooling (package.json, tsconfig.json, next.config.ts, eslint.config.mjs, postcss.config.mjs, middleware.ts)
 
-Owns (placeholder only): Future routes for classes, shop (referenced in content/site.ts nav with `live: false`)
-Does NOT Own: Anything yet
-Communicates With: N/A
-Isolation Level: N/A
+Owns: Dependency graph, scripts, TypeScript config, lint rules, PostCSS/Tailwind v4, middleware route matcher
+Communicates With: All source files (compile-time + every request through middleware)
+Isolation Level: Strong
+
+## Deployment (Vercel + GitHub)
+
+Owns: Production hosting at rooted-legacy-phi.vercel.app, environment variables, auto-deploys from `main`
+Does NOT Own: Source-of-truth code (GitHub `main`); local secrets (`.env.local` gitignored)
+Communicates With: GitHub repo; Supabase, OpenWeather, Resend, Google APIs at runtime
+Isolation Level: Strong
+
+## Deferred / Phase 2
+
+- Payments (Stripe) — paid tickets + farm-stand checkout + CSA subscriptions; "Tickets opening soon" CTA is the placeholder
+- Public vendor_profiles directory backed by DB (current /vendors page reads from content/vendors.ts as MVP)
+- Full admin CRUD
+- Wholesale order portal
+- QR check-in / live attendance dashboard / run-of-show
+- File uploads from forms

@@ -10,66 +10,32 @@ ADR log. Write entries when a decision is hard to reverse, affects multiple comp
 **Status:** Accepted
 
 **Context**
-A single developer is maintaining a marketing-plus-content site that may grow into checkout, auth, and live data. We need SSR/SSG for SEO, room to add server actions later, and a styling system flexible enough to match a hand-drawn logo aesthetic.
+Single developer building a marketing-plus-content site that might grow into commerce, auth, and live data.
 
 **Decision**
-Use **Next.js 15 App Router with TypeScript**, **Tailwind CSS v4** (config-in-CSS), **shadcn/ui** when component primitives are needed, **lucide-react** for icons. Host on **Vercel**.
-
-**Consequences**
-- **Positive:** zero-config deploys, RSC by default keeps client bundles small, room to grow into server actions / auth / commerce
-- **Negative:** locks us into the Vercel ecosystem for the easiest path; React 19 / Next 16 lint rules are stricter than older stacks
-- **Neutral:** Tailwind v4's CSS-first config differs from older muscle memory
-
-**Alternatives considered**
-- Astro — better for purely static content but worse story for future interactivity
-- Squarespace / Wix — fastest live but ceiling is low; can't ship a custom weather widget or typed events list cleanly
-- Eleventy + Hugo — extra context-switch for the dev; no real upside over Next
+Next.js 15 App Router + TypeScript, Tailwind CSS v4, lucide-react icons, hosted on Vercel.
 
 ---
 
-## ADR-002: MDX-in-repo for history; typed TypeScript for events
+## ADR-002: MDX-in-repo for history + recipes; typed TS for events; Google Sheets for produce
 
-**Date:** 2026-05-12
+**Date:** 2026-05-12, expanded 2026-05-22
 **Status:** Accepted
 
 **Context**
-Two different content shapes: long-form prose (history) and structured records (events). Both could be MDX, both could be a CMS, both could be typed TypeScript. With one developer and no editorial team, the cost of a CMS isn't justified yet.
+Three content shapes (long-form, structured records, weekly inventory) each fit a different store.
 
 **Decision**
-**History** = MDX files in `content/history/*.mdx` parsed by `lib/mdx.ts` and rendered by `next-mdx-remote/rsc`. **Events** = typed `Event[]` in `content/events.ts` with helper functions for partitioning and formatting. Both are git-tracked.
-
-**Consequences**
-- **Positive:** edits are PRs; no CMS infra; full type safety on event shape; SSG-friendly
-- **Negative:** non-technical editors can't update content; future migration to a CMS will require a one-time backfill
-- **Neutral:** MDX gives us React-in-markdown if we want it; the events list grows in code review
-
-**Alternatives considered**
-- Sanity / Payload — overkill for current scale
-- Notion-as-CMS — fragile and slow at build
-- Single MDX file per event — wouldn't capture typed metadata cleanly
+Long-form → MDX. Structured records → Supabase Postgres. Produce inventory → Google Sheets.
 
 ---
 
-## ADR-003: OpenWeather over Open-Meteo (and how the toggle behaves)
+## ADR-003: OpenWeather over Open-Meteo
 
-**Date:** 2026-05-12 (initial), 2026-05-13 (reverted to single-provider)
+**Date:** 2026-05-12 → 2026-05-13 (reverted to single provider)
 **Status:** Accepted
 
-**Context**
-We wanted real weather data for the farm. Open-Meteo is free and key-less; OpenWeather is free with a key (rate-limited but generous) and has slightly richer current-conditions semantics. During key activation lag we briefly ran a provider-abstraction in `lib/weather.ts` to render Open-Meteo data immediately.
-
-**Decision**
-Use **OpenWeather** as the production provider. The provider-abstraction was reverted to keep `lib/weather.ts` simple now that the key is live. `lib/weather.ts` uses `import "server-only"` and gates on `OPENWEATHER_API_KEY` — when unset, `weatherConfigured()` returns false and the UI shows graceful fallbacks instead of crashing.
-
-**Consequences**
-- **Positive:** simpler lib; clear error states; existing CurrentWeather/ForecastSlot/DailyForecast shapes can be backed by any provider if we re-add the abstraction
-- **Negative:** if OpenWeather has an outage, we don't fall back automatically — we render the service-error state
-- **Neutral:** the openweathermap.org icon CDN is the canonical icon source; consumers use `unoptimized` on next/image to bypass image-optimization for those URLs
-
-**Alternatives considered**
-- Keep the dual-provider dispatch — adds maintenance surface for a benefit we don't need right now
-- NOAA / weather.gov — free, no key, but the API is fussier and less suited to the icon-driven UI
-- Display a static climate summary — too low-value
+Single-provider OpenWeather. Graceful fallback when API key unset.
 
 ---
 
@@ -78,39 +44,131 @@ Use **OpenWeather** as the production provider. The provider-abstraction was rev
 **Date:** 2026-05-13
 **Status:** Accepted
 
-**Context**
-The mobile hamburger menu needs `useState` to toggle open/closed. The rest of the layout is happily static.
-
-**Decision**
-Mark `components/layout/Header.tsx` as `"use client"`. Footer, Logo, and all marketing components stay server components. Close-on-navigate is handled via `onClick={close}` on the mobile-panel `<Link>`s, not via a `useEffect` watching `usePathname()` — the latter trips the `react-hooks/set-state-in-effect` lint rule.
-
-**Consequences**
-- **Positive:** only a tiny client bundle for the header; everything else stays RSC
-- **Negative:** any nav state additions (e.g. dropdowns) compound into the same client island
-- **Neutral:** body-scroll-lock effect runs only when the menu is open, releases cleanly on close
-
-**Alternatives considered**
-- CSS-only `<details>`/checkbox hack — works but harder to a11y-instrument and theme
-- Move the entire layout to client — wasteful
+Only `components/layout/Header.tsx` is `"use client"`. Close-on-navigate via `onClick` (not `useEffect(pathname)`).
 
 ---
 
-## ADR-005: Git workflow — feature branch → PR → `main`
+## ADR-005: Git workflow — single working branch `perry-v2`
 
-**Date:** 2026-05-13
-**Status:** Accepted (revised from original plan)
+**Date:** 2026-05-13, revised 2026-05-22
+**Status:** Accepted
+
+Single `perry-v2` branch off `main`. PRs go `perry-v2 → main`. Vercel auto-deploys `main`. `develop` and `feat/*` deleted.
+
+---
+
+## ADR-006: Supabase as the backend (DB + Auth + Storage)
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+Supabase: Postgres + Auth (magic link MVP) + Storage + RLS in one product.
+
+---
+
+## ADR-007: Four Supabase client variants
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+`lib/supabase/{server,browser,admin,public}.ts` — each with a different auth/cookie profile. Choose by use case.
+
+---
+
+## ADR-008: Hand-maintained `Database` type
+
+**Date:** 2026-05-22
+**Status:** Accepted; supersede when schema stabilizes
+
+Hand-write `lib/supabase/types.ts`. Include `Relationships: []` per table or insert types collapse to `never[]`.
+
+---
+
+## ADR-009: Google Sheets as produce inventory source of truth
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+Staff edits one shared sheet. `lib/sheets.ts` reads via service-account JWT, caches 15 min.
+
+---
+
+## ADR-010: Read-only admin in MVP
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+`/admin` has dashboard + 4 list views. Edits happen in Supabase Studio. Phase 2 introduces forms.
+
+---
+
+## ADR-011: Event "flair" via additive nullable columns
+
+**Date:** 2026-05-22
+**Status:** Accepted
 
 **Context**
-Original plan called for a long-lived `develop` branch. In practice every feature has gone straight from a `feat/*` branch to a PR into `main` because there's only one developer and one production environment.
+Soothing Sundays event needed a custom detail-page treatment (tagline, price, themed pillars, included perks, featured badge). Three options:
+1. Hard-code per-event behavior in the page based on slug
+2. Add a separate `featured_events` table joined to events
+3. Add optional columns to the existing `events` table
 
 **Decision**
-Standardize on **feature branch → PR → `main`**. Vercel auto-deploys `main`. `develop` will be deleted or fast-forwarded once verified.
+Option 3 — migration `0002_event_flair.sql` adds `tagline`, `price_cents`, `themes (jsonb)`, `included_perks (jsonb)`, `is_featured (boolean)` columns. All nullable / default-empty so existing rows are unaffected. The event detail page checks `is_featured` and renders the richer treatment conditionally.
 
 **Consequences**
-- **Positive:** simpler mental model; matches how the project is actually built
-- **Negative:** no staging gate between feature and prod — Vercel preview deploys on PRs are the only check
-- **Neutral:** can reintroduce `develop` if a second developer joins or release cadence requires it
+- **Positive:** any future event can opt into the flair just by setting these columns; no per-event code paths; data lives next to its event
+- **Negative:** widens the events table by 5 columns even though most events won't use them; adding more flair fields in the future means more nullable columns
+- **Neutral:** matches the spirit of the existing `highlights` + `partners` jsonb columns
 
 **Alternatives considered**
-- Strict GitFlow with `develop` + release branches — too heavy for one dev
-- Trunk-based with no PRs — gives up the Vercel preview safety net
+- Separate `featured_events` table — adds join complexity for a one-to-zero-or-one relationship that's better as columns
+- Slug-based hard-coding — fragile, doesn't scale beyond one featured event
+
+---
+
+## ADR-012: Vendor data — typed array in MVP, DB in Phase 2
+
+**Date:** 2026-05-22
+**Status:** Accepted; revisit in Phase 2
+
+**Context**
+The `/vendors` directory page needs to display partners and featured vendors. Two data sources already exist for partners: `content/site.ts` `partners[]` (long-term partners shown on home strip). Pure-trition and similar event vendors don't fit there — they appeared at one event but aren't ongoing co-organizers.
+
+**Decision**
+For MVP, vendor directory is rendered from two static sources:
+1. `site.partners` — long-term partners (Bodi Buzz, Cre8tive Alignment Network)
+2. `content/vendors.ts` `featuredVendors[]` — typed array of featured event vendors (Pure-trition)
+
+Vendor applications still write to the `vendor_applications` table; admin approves them manually for now via Supabase Studio.
+
+In Phase 2, build the DB-backed `vendor_profiles` table. Admin approval becomes a single click that creates a row. Retire `content/vendors.ts` as a one-time seed.
+
+**Consequences**
+- **Positive:** zero infra; the directory ships now; clear migration path
+- **Negative:** approving a vendor application doesn't currently create a directory entry — admin must edit `content/vendors.ts` and PR it. Acceptable in MVP because applications are infrequent.
+- **Neutral:** two sources of truth for vendor-shaped data (partners in site.ts + featuredVendors in vendors.ts) — both render in the same UI section, so users don't notice the split
+
+**Alternatives considered**
+- Unify everything under `site.partners` — would conflate long-term partners with one-off vendors
+- Build vendor_profiles in MVP — would have meant building the admin approval flow too, expanding MVP scope
+
+---
+
+## ADR-013: Default Open Graph image points at a community photo
+
+**Date:** 2026-05-22
+**Status:** Accepted
+
+**Context**
+Site-wide default OG image was the bare logo on a black background — fine on the home page but uninspiring for share previews from history articles, recipes, or general pages.
+
+**Decision**
+Root layout's `openGraph.images` defaults to `/gallery/grand-opening-vendors-tents.jpg` (1200×900). Logo kept as a secondary entry. Twitter card set to `summary_large_image` with the same source. Specific routes (`/about`, `/vendors`, `/events/[slug]`) override with contextual images.
+
+**Consequences**
+- **Positive:** shares show actual farm life
+- **Negative:** the default depends on a file that must be saved before it works; until then social previews fall back to whatever crawler default
+- **Neutral:** routes that don't override (history, recipes, contact) all show the market photo — fine for now, can be customized per-route later
+
+---

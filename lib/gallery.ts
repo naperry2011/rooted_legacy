@@ -35,6 +35,24 @@ export async function listGalleryPhotos(): Promise<GalleryPhoto[]> {
   }));
 }
 
+export async function listPhotosForEvent(
+  eventId: string,
+): Promise<GalleryPhoto[]> {
+  if (!hasSupabase()) return [];
+  const supabase = createPublicClient();
+  const { data, error } = await supabase
+    .from("gallery_photos")
+    .select("id, path, alt, caption")
+    .eq("event_id", eventId)
+    .order("sort_order", { ascending: true })
+    .returns<{ id: string; path: string; alt: string; caption: string | null }[]>();
+  if (error || !data) return [];
+  return data.map((row) => ({
+    ...row,
+    src: resolveSrc(row.path, supabase),
+  }));
+}
+
 function resolveSrc(
   rawPath: string,
   supabase: ReturnType<typeof createPublicClient>,

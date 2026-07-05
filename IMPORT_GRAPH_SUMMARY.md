@@ -2,37 +2,62 @@
 
 ## Core Dependency Nodes
 
-- content/site.ts — imported by app/layout.tsx, components/layout/{Header,Footer}.tsx, components/marketing/*, app/weather/page.tsx
-- content/events.ts — imported by app/events/page.tsx, app/events/[slug]/page.tsx, components/events/EventCard.tsx
-- lib/mdx.ts — imported by both history routes (index + [slug])
-- lib/weather.ts — imported by app/weather/page.tsx and components/weather/WeatherWidget.tsx
-- app/globals.css — imported once by app/layout.tsx; defines brand tokens consumed via Tailwind utility classes across every component
-- components/brand/Logo.tsx — imported by Header and Hero
-- next-mdx-remote/rsc — sole MDX renderer; only consumer is app/history/[slug]/page.tsx
-
-## Path Alias
-
-- `@/*` (tsconfig.json) → repo root; used by every component/route import
+- `content/site.ts` — Layout, Header, Footer, marketing components, /vendors directory (partners section), event-detail partner-link lookup
+- `content/vendors.ts` — /vendors page; will graduate to a DB-backed table in Phase 2
+- `lib/auth.ts` — every protected route (account, admin/*) and middleware-adjacent paths
+- `lib/supabase/server.ts` — RSC + route handlers needing user context
+- `lib/supabase/public.ts` — every public read (events, gallery, event photos); safe at build
+- `lib/supabase/admin.ts` — all server actions, all /admin pages
+- `lib/supabase/types.ts` — typed Database (now includes flair columns)
+- `lib/sheets.ts` — /shop, /shop/[sku], components/produce/WhatsGrowing
+- `lib/recipes.ts` — /recipes, /recipes/[slug], /shop/[sku] cross-link
+- `lib/events.ts` — /events, /events/[slug] (now exports formatPriceCents)
+- `lib/gallery.ts` — /gallery, event detail "From the day" section
+- `lib/resend.ts` — every server action that sends email
+- `lib/mdx.ts` — /history routes
+- `app/globals.css` — brand tokens, referenced as Tailwind utility classes everywhere
+- `components/forms/fields.tsx` — Field/Input/Textarea/SubmitButton/FormAlert reused by 5+ forms
 
 ## Server-Only Boundaries
 
-- lib/weather.ts uses `import "server-only"` — must never be imported from a `"use client"` module
-- components/weather/WeatherWidget.tsx is a server component; safe consumer of lib/weather.ts
+These modules carry `import "server-only"` and must never be imported from a client component:
 
-## Client Components
+- `lib/supabase/server.ts`, `lib/supabase/admin.ts`, `lib/supabase/public.ts`
+- `lib/auth.ts`
+- `lib/events.ts`, `lib/gallery.ts`, `lib/sheets.ts`, `lib/weather.ts`
+- `lib/resend.ts`
 
-- components/layout/Header.tsx (`"use client"`) — holds the mobile menu state
+`lib/recipes.ts` uses Node fs at build time (no explicit marker but effectively the same).
+
+## Client Components (use client)
+
+- `components/layout/Header.tsx`
+- `components/events/BookingForm.tsx`
+- `components/marketing/NewsletterSignup.tsx`
+- `app/login/LoginForm.tsx`
+- `app/vendors/apply/VendorForm.tsx`
+- `app/contact/ContactForm.tsx`
+- `lib/supabase/browser.ts`
+
+`components/forms/fields.tsx`, `components/vendors/VendorCard.tsx`, `components/produce/{ShopCard,WhatsGrowing}.tsx`, `components/events/EventCard.tsx` are intentionally NOT marked `use client` — they render on the server.
+
+## Path Alias
+
+- `@/*` (tsconfig.json) → repo root
 
 ## Potential Refactor Risk Areas
 
-- content/site.ts (high fan-in; nav shape changes ripple into Header desktop + mobile branches)
-- content/events.ts (typed Event shape used by index, detail, card, and partition function — schema change touches 4 files)
-- app/globals.css (token names hard-coded into Tailwind class strings repo-wide; renaming a token requires text-wide updates)
-- lib/weather.ts (single source of truth for OpenWeather mapping; CurrentWeather/ForecastSlot/DailyForecast shapes are consumed by both home widget and `/weather`)
-- app/history/[slug]/page.tsx (couples MDX rendering, metadata, SSG params, and typography overrides in one file)
+- `lib/supabase/types.ts` — hand-maintained Database type; the recent 0002 migration required updating both Row and Insert shapes for `events`. Schema drift between SQL and TS would surface as confusing type errors. Long-term: `supabase gen types typescript`.
+- `content/site.ts` — `nav[].primary` flag interpreted by Header (desktop slice) and Footer/mobile (full list). `partners[]` schema (tagline, services, instagram, email) is consumed by both PartnerStrip (home) AND /vendors directory.
+- `content/vendors.ts` — `Vendor` shape consumed by /vendors page and VendorCard. Schema change touches 2 files. Once Phase 2 ships vendor_profiles, this becomes a one-time seed.
+- `app/globals.css` — brand tokens hard-coded as Tailwind utility class names repo-wide. Renaming requires global find/replace.
+- `lib/sheets.ts` — Google Sheet header-row contract is implicit. Schema change requires coordinated update.
+- `lib/resend.ts` — every form action silently no-ops when `RESEND_API_KEY` is missing.
+- `gallery_photos.path` — overloaded column stores both `/public/...` paths and Storage bucket paths. Resolver in `lib/gallery.ts` handles both, but is brittle if a path starts with neither `/` nor `http`.
+- `app/admin/*` — service-role; the role check happens twice (middleware + layout). Don't bypass either.
 
 ## Notes
 
-- No circular dependencies detected.
-- No barrel files; each component imported from its own path.
-- Pure tree: pages → components → content/lib; no upward imports.
+- No circular dependencies.
+- Pure tree: pages → components → lib/content; no upward imports.
+- 4 Supabase clients (server/browser/admin/public) — choose per usage: server (user context), browser (client), admin (bypass RLS), public (no cookies, safe at build).

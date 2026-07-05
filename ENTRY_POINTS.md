@@ -1,80 +1,119 @@
 # ENTRY_POINTS
 
-## Next.js Dev Server
+## npm Scripts
 
-Path: `package.json` script `dev` → `next dev`
-Responsibility: Local development server with HMR
-Invokes: app/layout.tsx → all app/** routes
-Depends On: next, react, react-dom, tailwindcss
+### dev / build / start / lint
 
-## Next.js Production Build
+Path: `package.json`
+Responsibility: Next.js dev server, prod build, prod server, ESLint
+Depends On: next, tsconfig, ESLint config (incl. react-hooks rules)
 
-Path: `package.json` script `build` → `next build`
-Responsibility: Produces optimized output (.next/), prerenders static routes and SSG slugs
-Invokes: app/**, lib/mdx.ts, lib/weather.ts, content/**
-Depends On: TypeScript, Tailwind v4, next-mdx-remote, gray-matter
+## Middleware
 
-## Next.js Production Server
+Path: `middleware.ts`
+Responsibility: Refreshes Supabase session cookies; redirects unauthenticated users from `/admin/*` and `/account/*` to `/login?next=…`
+Depends On: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-Path: `package.json` script `start` → `next start`
-Responsibility: Serves built output
-Invokes: .next/ artifacts
-Depends On: build output
+## Root Layout
 
-## Lint
+Path: `app/layout.tsx`
+Responsibility: HTML shell, fonts, viewport + theme color, Header + Footer, default Open Graph + Twitter card
+Invokes: components/layout/{Header,Footer}.tsx, app/globals.css
+Depends On: content/site.ts, next/font/google, public/gallery/grand-opening-vendors-tents.jpg (default OG image)
 
-Path: `package.json` script `lint` → `eslint`
-Responsibility: Static analysis (includes react-hooks rules)
-Invokes: eslint.config.mjs
-Depends On: eslint-config-next
+## Marketing Routes
 
-## Root Layout (Implicit Entry per Request)
+### Home
+Path: `app/page.tsx` (ISR 30 min)
+Invokes: Hero, WhatWeDo, WhatsGrowing, WeatherWidget, LocationCard, PartnerStrip
 
-Path: app/layout.tsx
-Responsibility: HTML shell, fonts, viewport + theme metadata, brand chrome (Header, Footer)
-Invokes: components/layout/Header.tsx, components/layout/Footer.tsx, app/globals.css
-Depends On: content/site.ts, next/font/google
+### About / Our Story
+Path: `app/about/page.tsx` (static)
+Responsibility: Photo hero + mission + 3 values + CTA card linking to history article + contact
+Depends On: public/gallery/grand-opening-class.jpg, content/site.ts
 
-## Home Route
+### Events Index
+Path: `app/events/page.tsx` (ISR 5 min)
+Invokes: lib/events.ts → listPublishedEvents, partitionEvents
 
-Path: app/page.tsx
-Responsibility: Marketing landing page composition with embedded WeatherWidget
-Invokes: components/marketing/{Hero,WhatWeDo,LocationCard,PartnerStrip}.tsx, components/weather/WeatherWidget.tsx
-Depends On: content/site.ts, lib/weather.ts (transitively)
-Revalidate: 1800s (inherited via WeatherWidget fetch)
+### Event Detail
+Path: `app/events/[slug]/page.tsx` (SSG when Supabase configured; dynamic otherwise; ISR 5 min)
+Responsibility: Featured-event treatment when `is_featured=true` (radial glow, tagline, themes pillars, price + perks card). "From the day" photo grid pulled from `listPhotosForEvent(event.id)`. Ticketed events show a "Tickets opening soon" CTA.
+Invokes: lib/events.ts (getEventBySlug, listPublishedEventSlugsForBuild, formatPriceCents); lib/gallery.ts (listPhotosForEvent); lib/auth.ts; BookingForm
+Depends On: content/site.ts (partner link lookups)
 
-## Events Index Route
+### History Index / Detail
+Path: `app/history/page.tsx`, `app/history/[slug]/page.tsx` (SSG)
+Invokes: lib/mdx.ts; next-mdx-remote/rsc
 
-Path: app/events/page.tsx
-Responsibility: Lists upcoming and past events from `content/events.ts`
-Invokes: content/events.ts → `partitionEvents()`; components/events/EventCard.tsx
-Depends On: TypeScript event data only (no I/O)
+### Recipes Index / Detail
+Path: `app/recipes/page.tsx`, `app/recipes/[slug]/page.tsx` (SSG)
+Invokes: lib/recipes.ts; next-mdx-remote/rsc
 
-## Event Detail Route (SSG)
+### Shop Index / Detail
+Path: `app/shop/page.tsx` (ISR 15 min), `app/shop/[sku]/page.tsx` (dynamic)
+Invokes: lib/sheets.ts; lib/recipes.ts (cross-link)
 
-Path: app/events/[slug]/page.tsx
-Responsibility: Renders a single event with flyer, meta, highlights, partners, directions
-Invokes: content/events.ts → `getEvent()`, `events` (for `generateStaticParams`)
-Depends On: public/brand/flyer_*.jpg
+### Gallery
+Path: `app/gallery/page.tsx` (ISR 5 min)
+Invokes: lib/gallery.ts → listGalleryPhotos
 
-## History Index Route
+### Weather
+Path: `app/weather/page.tsx` (ISR 30 min)
+Invokes: lib/weather.ts
 
-Path: app/history/page.tsx
-Responsibility: Lists MDX articles
-Invokes: lib/mdx.ts → listHistoryArticles()
-Depends On: content/history/*.mdx
+### Contact
+Path: `app/contact/page.tsx`
+Invokes: ContactForm → app/contact/actions.ts → createAdminClient + sendEmail
 
-## History Article Route (SSG)
+### Vendor Directory
+Path: `app/vendors/page.tsx` (static)
+Responsibility: Renders long-term partners (from `site.partners`) + featured vendors (from `content/vendors.ts`) + apply CTA
+Depends On: content/site.ts, content/vendors.ts, public/gallery/grand-opening-pure-trition.jpg
 
-Path: app/history/[slug]/page.tsx
-Responsibility: Renders a single MDX article; supplies generateStaticParams + generateMetadata
-Invokes: lib/mdx.ts → historySlugs(), getHistoryArticle(); next-mdx-remote/rsc MDXRemote
-Depends On: content/history/*.mdx, gray-matter
+### Vendor Application
+Path: `app/vendors/apply/page.tsx`
+Invokes: VendorForm → app/vendors/apply/actions.ts → createAdminClient + sendEmail
 
-## Weather Route
+## Auth Routes
 
-Path: app/weather/page.tsx
-Responsibility: Renders current conditions, 24h hourly, and 5-day outlook; graceful "Not configured" / service-error states
-Invokes: lib/weather.ts → getCurrent(), getHourly(), getDaily(), weatherConfigured()
-Depends On: OPENWEATHER_API_KEY env var; OpenWeather `/data/2.5/*` endpoints
-Revalidate: 1800s
+### Login
+Path: `app/login/page.tsx`
+Invokes: LoginForm → app/login/actions.ts → supabase.auth.signInWithOtp
+
+### Callback
+Path: `app/auth/callback/route.ts`
+Responsibility: Exchanges OTP `code` query param for a session
+
+### Sign-out
+Path: `app/auth/signout/route.ts`
+
+## Account Route
+
+Path: `app/account/page.tsx`
+Responsibility: Lists current user's RSVPs; sign-out button
+
+## Admin Routes (admin role required)
+
+### Layout
+Path: `app/admin/layout.tsx`
+Responsibility: Gate via lib/auth.ts; sidebar nav
+
+### Dashboard + list views
+Paths: `app/admin/page.tsx`, `app/admin/{bookings,subscribers,vendors,messages}/page.tsx`
+Invokes: createAdminClient
+
+## API Routes
+
+### Newsletter confirm
+Path: `app/api/newsletter/confirm/route.ts`
+
+## Server Actions
+
+- `app/login/actions.ts` → sendMagicLink
+- `app/events/[slug]/actions.ts` → createBooking
+- `app/actions/newsletter.ts` → subscribeToNewsletter
+- `app/vendors/apply/actions.ts` → submitVendorApplication
+- `app/contact/actions.ts` → sendContactMessage
+
+All validate input with zod, persist via createAdminClient (service-role bypass for guest input), and fire side-effect emails via lib/resend.ts.

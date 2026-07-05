@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   CalendarCheck,
+  CalendarPlus,
   Inbox,
   LayoutDashboard,
   Mail,
@@ -11,6 +12,7 @@ import { getCurrentRole, getCurrentUser } from "@/lib/auth";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/events", label: "Events", icon: CalendarPlus },
   { href: "/admin/bookings", label: "RSVPs", icon: CalendarCheck },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/vendors", label: "Vendor apps", icon: Store },

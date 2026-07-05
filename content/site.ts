@@ -1,3 +1,13 @@
+type Partner = {
+  name: string;
+  url?: string;
+  blurb: string;
+  tagline?: string;
+  services?: readonly string[];
+  instagram?: string;
+  email?: string;
+};
+
 export const site = {
   name: "Rooted Legacy",
   tagline: "An urban farm growing food, classes, and community",
@@ -18,21 +28,36 @@ export const site = {
   partners: [
     {
       name: "Bodi Buzz",
-      url: "",
-      blurb: "Wellness partner — A1C / BP checks, yoga, fitness programming.",
+      url: "https://www.bodibuzz.com/",
+      blurb:
+        "Indianapolis-based wellness partner — organic herbal goods, sustainable agriculture, and community health education.",
+      tagline:
+        "Nature holds the key to restoring balance — and by using it we can empower communities to live healthier, more vibrant lives.",
+      services: [
+        "Herbal shop",
+        "A1C + BP checks",
+        "Yoga + fitness",
+        "Urban farming education",
+      ],
+      instagram: "bodibuzz",
+      email: "bodibuzz@gmail.com",
     },
     {
       name: "Cre8tive Alignment Network",
       url: "https://cre8tivealignmentnetwork.org",
-      blurb: "Values & ethics programming — the 7 Pillars of a Healthy Culture.",
+      blurb:
+        "Values & ethics programming — the 7 Pillars of a Healthy Culture series, building cultures of trust and aligned action.",
+      services: ["Pillars series", "Leadership workshops", "Community speakers"],
     },
-  ],
+  ] satisfies readonly Partner[],
   nav: [
     { label: "Home", href: "/", live: true, primary: true },
     { label: "Events", href: "/events", live: true, primary: true },
     { label: "Shop", href: "/shop", live: true, primary: true },
     { label: "Recipes", href: "/recipes", live: true, primary: true },
-    { label: "History", href: "/history", live: true, primary: true },
+    { label: "About", href: "/about", live: true, primary: true },
+    { label: "Vendors", href: "/vendors", live: true, primary: false },
+    { label: "History", href: "/history", live: true, primary: false },
     { label: "Gallery", href: "/gallery", live: true, primary: false },
     { label: "Weather", href: "/weather", live: true, primary: false },
     { label: "Contact", href: "/contact", live: true, primary: false },

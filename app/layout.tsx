@@ -30,8 +30,24 @@ export const metadata: Metadata = {
     description: site.description,
     url: site.url,
     siteName: site.name,
-    images: ["/brand/rooted_legacy_logo.jpg"],
+    images: [
+      {
+        url: "/gallery/grand-opening-vendors-tents.jpg",
+        width: 1200,
+        height: 900,
+        alt: "Vendor tents on the green at Rooted Legacy",
+      },
+      // Fallback: the logo, used by pages that pass arrays through.
+      { url: "/brand/rooted_legacy_logo.jpg", width: 1080, height: 1080 },
+    ],
     type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: site.name,
+    description: site.description,
+    images: ["/gallery/grand-opening-vendors-tents.jpg"],
   },
   icons: { icon: "/brand/rooted_legacy_logo.jpg" },
 };

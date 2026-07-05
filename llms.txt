@@ -1,82 +1,141 @@
 # Rooted Legacy
 
-> Marketing and content site for an Indianapolis urban farm at 865 N German Church Rd — classes, events, history, and live weather.
+> Marketing + community platform for an Indianapolis urban farm. Booking (RSVP), produce farm stand (read-only), recipes, history, weather, vendor + contact forms, admin dashboard, vendor directory, About page, and featured-event treatment (Soothing Sundays).
 
 ## Project Overview
 
-**Tech Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · MDX (next-mdx-remote) · lucide-react · OpenWeather API · Vercel hosting
-**Status:** Active development; v1 marketing surface deployed
-**Purpose:** Public-facing site for the farm and its partners (Bodi Buzz, Cre8tive Alignment Network). Single developer maintains.
+**Tech Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth + Storage) · Resend · Google Sheets API · OpenWeather · MDX (next-mdx-remote) · Vercel hosting
+**Status:** Phase 1 MVP on `perry-v2` branch; client provisioning + reviewing
+**Purpose:** Public site + lightweight backoffice for a Black-led urban farm and its partners (Bodi Buzz, Cre8tive Alignment Network, Pure-trition). Single developer maintains.
 
 ## Core Documentation
 
-- `README.md` — Setup and getting started
-- `FEATURE_SPEC.md` — Original feature breakdown (predates events/weather; some content overlaps with roadmap.md)
+- `README.md` — Setup
+- `docs/SETUP.md` — Provisioning Supabase, Resend, Google Sheets
 - `CODE_MAP.md` — Feature-to-file map
-- `ENTRY_POINTS.md` — Where execution starts (npm scripts, routes)
-- `DATA_FLOW.md` — System-level data movement (renders, fetches, ISR)
-- `IMPORT_GRAPH_SUMMARY.md` — Core modules and refactor-risk areas
-- `FEATURE_BOUNDARIES.md` — Component responsibilities and isolation
-- `docs/ai/memory.md` — Project history and current state
-- `docs/ai/roadmap.md` — Forward-looking priorities
+- `ENTRY_POINTS.md` — Routes, scripts, middleware, server actions
+- `DATA_FLOW.md` — System-level data movement
+- `IMPORT_GRAPH_SUMMARY.md` — Core modules + server/client boundaries
+- `FEATURE_BOUNDARIES.md` — Component ownership
+- `docs/ai/memory.md` — Project history + current state
+- `docs/ai/roadmap.md` — Phase 1 / 2 / 3 plan
 - `docs/ai/tasks.md` — Active work
-- `docs/ai/decisions.md` — ADRs (stack, content strategy, weather provider, git workflow)
+- `docs/ai/decisions.md` — 13 ADRs
 - `docs/ai/architecture.md` — System design
 
 ## Key Files by Area
 
 ### Layout / Brand
-- `app/layout.tsx` — root HTML shell, fonts, viewport, header/footer
-- `components/layout/Header.tsx` — client component; mobile hamburger menu
-- `components/layout/Footer.tsx`
-- `components/brand/Logo.tsx`
-- `app/globals.css` — Tailwind v4 `@theme` block + brand CSS variables
-- `content/site.ts` — name, tagline, address, partners, nav (with `live` flag)
+- `app/layout.tsx` — root layout + default OG + Twitter card
+- `components/layout/Header.tsx` — client component; mobile menu + desktop primary nav
+- `components/layout/Footer.tsx` — secondary nav + newsletter signup
+- `app/globals.css` — Tailwind v4 `@theme` + brand tokens
+- `content/site.ts` — name, address, partners (with tagline/services/IG/email), nav (`primary` flag)
 
-### Home
-- `app/page.tsx`
-- `components/marketing/{Hero,WhatWeDo,LocationCard,PartnerStrip}.tsx`
+### About + Vendors
+- `app/about/page.tsx` — story page with photo hero
+- `app/vendors/page.tsx` — directory: long-term partners + featured vendors
+- `content/vendors.ts` — typed Vendor[] (currently: Pure-trition)
+- `components/vendors/VendorCard.tsx`
+- `app/vendors/apply/*` — application form
 
-### Events
-- `app/events/page.tsx` — index, partitioned upcoming/past
-- `app/events/[slug]/page.tsx` — SSG detail page
-- `components/events/EventCard.tsx`
-- `content/events.ts` — typed `Event[]` + helpers (`partitionEvents`, `getEvent`, `formatEventDate`, `formatTimeRange`)
+### Supabase + Auth
+- `lib/supabase/{server,browser,admin,public}.ts` — 4 clients by use case
+- `lib/supabase/types.ts` — hand-written Database (incl. 0002 flair columns)
+- `lib/auth.ts` — role helpers
+- `middleware.ts` — session refresh + /admin /account gating
+- `supabase/migrations/0001_init.sql` + `0002_event_flair.sql` + `seed.sql`
+
+### Events + RSVP + Featured flair
+- `app/events/page.tsx`, `app/events/[slug]/page.tsx`, `app/events/[slug]/actions.ts`
+- `components/events/{EventCard,BookingForm}.tsx`
+- `lib/events.ts` — incl. `formatPriceCents`
+- `lib/validations/booking.ts`
+- Featured fields: `tagline`, `price_cents`, `themes`, `included_perks`, `is_featured`
+
+### Event Photos
+- `lib/gallery.ts` — `listPhotosForEvent(eventId)` powers the "From the day" grid on event detail
+
+### Produce (Google Sheets)
+- `lib/sheets.ts` + `app/shop/**` + `components/produce/*`
+
+### Recipes
+- `app/recipes/**` + `lib/recipes.ts` + `content/recipes/*.mdx`
 
 ### History
-- `app/history/page.tsx` — index
-- `app/history/[slug]/page.tsx` — MDX renderer with typography overrides
-- `lib/mdx.ts` — frontmatter parsing + slug listing
-- `content/history/*.mdx`
+- `app/history/**` + `lib/mdx.ts` + `content/history/*.mdx`
+
+### Forms (Newsletter / Vendor / Contact)
+- `components/marketing/NewsletterSignup.tsx`
+- `app/actions/newsletter.ts` + `app/api/newsletter/confirm/route.ts`
+- `app/vendors/apply/*`, `app/contact/*`
+- `lib/validations/*`
+- `components/forms/fields.tsx` — shared primitives
+
+### Gallery
+- `app/gallery/page.tsx`
+- `lib/gallery.ts` — local /public or Supabase Storage path resolution
+
+### Admin
+- `app/admin/layout.tsx` (role gate) + dashboard + 4 list views
+- `components/admin/DataTable.tsx`
 
 ### Weather
-- `app/weather/page.tsx` — current + hourly + 5-day; 30-min revalidate
-- `components/weather/WeatherWidget.tsx` — home page widget
-- `lib/weather.ts` — `server-only`; OpenWeather fetch + mapping
+- `lib/weather.ts` + `app/weather/page.tsx` + `components/weather/WeatherWidget.tsx`
+
+### Email
+- `lib/resend.ts` — wrapHtml + sendEmail; soft no-op when RESEND_API_KEY missing
 
 ## Common Tasks
 
-**To add a history article:** create `content/history/your-slug.mdx` with frontmatter (`title`, `date`, `excerpt`, optional `author`). It auto-appears on `/history` and at `/history/your-slug`.
+**To add a history article:** create `content/history/your-slug.mdx` with frontmatter. Auto-appears at `/history` + `/history/your-slug`.
 
-**To add an event:** append an `Event` object to `events` in `content/events.ts`. Include `slug`, `title`, `date` (ISO), optional `start`/`end`/`location`/`highlights`/`partners`/`flyer`/`donateUrl`/`externalUrl`. SSG params and partitioning happen automatically.
+**To add a recipe:** create `content/recipes/your-slug.mdx` with `ingredients` (array). Shop items whose name matches any ingredient cross-link to it.
 
-**To change brand tokens:** edit the `:root` and `@theme inline` blocks in `app/globals.css`. Token names are referenced as Tailwind utilities repo-wide (`bg-bg`, `text-primary`, `border-line`, etc.) — rename via project-wide find/replace.
+**To add an event:** INSERT into the Supabase `events` table. Set `status='published'`. For a featured event, set `is_featured=true` + `tagline` + `themes` (jsonb array of strings) + `included_perks` (jsonb) + `price_cents`.
 
-**To run locally:** `npm install`, set `OPENWEATHER_API_KEY` in `.env.local`, then `npm run dev` (http://localhost:3000).
+**To add a vendor to the directory:** append to `featuredVendors` in `content/vendors.ts`. Long-term partners go in `site.partners` in `content/site.ts`.
 
-**To deploy:** merge into `main`; Vercel auto-deploys. Env vars must be set in the Vercel project for production.
+**To link photos to an event:** insert rows into `gallery_photos` with `event_id = (select id from events where slug = '…')`. The event detail page picks them up automatically.
+
+**To grow the produce catalog:** edit the Google Sheet — that's it. Site reflects within 15 min.
+
+**To change brand tokens:** edit `:root` and `@theme inline` in `app/globals.css`. Token names referenced as Tailwind classes repo-wide.
+
+**To grant admin to a user:** add their email to `ADMIN_EMAIL_ALLOWLIST` (`.env.local` + Vercel). Role conferred at next sign-in.
+
+**To run locally:** `npm install`, copy `.env.example` to `.env.local`, fill keys, `npm run dev`.
+
+**To deploy:** merge `perry-v2 → main`. Vercel auto-deploys. Env vars must be set in Vercel project.
+
+## Required Image Files (save to disk before deploy)
+
+- `public/brand/flyer_soothing_sundays.jpg` — Soothing Sundays event flyer
+- `public/gallery/grand-opening-class.jpg` — About page hero + Grand Opening photos
+- `public/gallery/grand-opening-vendors-tents.jpg` — default OG image + Grand Opening photos
+- `public/gallery/grand-opening-vendors-row.jpg` — Grand Opening photos + /vendors OG
+- `public/gallery/grand-opening-pure-trition.jpg` — Pure-trition vendor card
 
 ## Environment Variables
 
-- `OPENWEATHER_API_KEY` — required for live weather; site shows "Not configured" placeholder when absent
-- `WEATHER_LAT` — optional override of farm latitude (default 39.7745)
-- `WEATHER_LON` — optional override of farm longitude (default -86.0103)
-- `WEATHER_UNITS` — optional, `"imperial"` (default) or `"metric"`
+### Required for MVP
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_EMAIL_ALLOWLIST` — comma-separated admin emails
+- `OPENWEATHER_API_KEY`
 
-`.env.local` is gitignored. `.env.example` is committed and documents these.
+### Optional (graceful degrade)
+- `RESEND_API_KEY` (+ optional `RESEND_FROM`)
+- `CONTACT_TO_EMAIL`
+- `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `WEATHER_LAT`, `WEATHER_LON`, `WEATHER_UNITS`
+
+### Phase 2 (when ready)
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+`.env.local` is gitignored. `.env.example` is committed and documents everything.
 
 ## Git Workflow
 
-- `main` — production; auto-deploys to Vercel
-- `feat/*` — feature branches; open a PR into `main`
-- `develop` — stale; will be deleted or repurposed
+- `main` — production; Vercel auto-deploys
+- `perry-v2` — sole working branch; PR into `main` when ready
+- All historical branches deleted
