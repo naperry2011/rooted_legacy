@@ -7,11 +7,11 @@ import {
   Input,
   SubmitButton,
 } from "@/components/forms/fields";
-import { sendMagicLink, type LoginState } from "./actions";
+import { signIn, type LoginState } from "./actions";
 
 export function LoginForm({ next }: { next?: string }) {
   const [state, formAction, pending] = useActionState<LoginState, FormData>(
-    sendMagicLink,
+    signIn,
     undefined,
   );
 
@@ -19,7 +19,7 @@ export function LoginForm({ next }: { next?: string }) {
     <form action={formAction} className="space-y-5">
       {next && <input type="hidden" name="next" value={next} />}
 
-      <Field label="Email" name="email" error={state?.error}>
+      <Field label="Email" name="email">
         <Input
           id="email"
           name="email"
@@ -31,16 +31,22 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </Field>
 
+      <Field label="Password" name="password">
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          placeholder="••••••••"
+        />
+      </Field>
+
       {state?.error && <FormAlert kind="error">{state.error}</FormAlert>}
 
       <SubmitButton pending={pending} className="w-full sm:w-auto">
-        Send magic link
+        Sign in
       </SubmitButton>
-
-      <p className="text-xs text-ink-muted/70">
-        By signing in you agree to receive transactional emails from Rooted
-        Legacy.
-      </p>
     </form>
   );
 }

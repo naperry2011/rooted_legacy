@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; sent?: string }>;
+  searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
   const user = await getCurrentUser().catch(() => null);
@@ -29,20 +29,11 @@ export default async function LoginPage({
           Sign in
         </h1>
         <p className="mt-3 text-ink-muted">
-          We&apos;ll email you a magic link — no password required.
+          Sign in with your email and password.
         </p>
       </header>
 
-      {params.sent === "1" ? (
-        <div className="rounded-2xl border border-line bg-bg-elev p-6">
-          <h2 className="font-display text-2xl text-cream">Check your email</h2>
-          <p className="mt-2 text-ink-muted">
-            We just sent you a sign-in link. It expires in 1 hour.
-          </p>
-        </div>
-      ) : (
-        <LoginForm next={params.next} />
-      )}
+      <LoginForm next={params.next} />
     </div>
   );
 }
