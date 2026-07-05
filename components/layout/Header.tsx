@@ -3,12 +3,49 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { Logo } from "@/components/brand/Logo";
 import { site } from "@/content/site";
+import { createBrowserClient } from "@/lib/supabase/browser";
+
+/**
+ * Browser-side auth check so the shared header can show Log in / Log out
+ * without forcing every page to render dynamically. Returns null until known
+ * (avoids a flash of the wrong control), then true/false.
+ *
+ * Relies on onAuthStateChange, which emits an INITIAL_SESSION event on
+ * subscribe — so state settles from an async callback (no sync setState).
+ */
+function useAuthed(): boolean | null {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let supabase: ReturnType<typeof createBrowserClient>;
+    try {
+      supabase = createBrowserClient();
+    } catch {
+      // Supabase not configured — treat as logged out.
+      queueMicrotask(() => setAuthed(false));
+      return;
+    }
+    const { data } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        setAuthed(Boolean(session));
+      },
+    );
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  return authed;
+}
+
+const linkClass =
+  "px-3 py-2 rounded-md text-ink-muted hover:text-primary hover:bg-bg-elev transition-colors";
 
 export function Header() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const authed = useAuthed();
 
   // Lock body scroll when menu open
   useEffect(() => {
@@ -40,14 +77,35 @@ export function Header() {
           {site.nav
             .filter((i) => i.primary && i.live)
             .map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="px-3 py-2 rounded-md text-ink-muted hover:text-primary hover:bg-bg-elev transition-colors"
-              >
+              <Link key={item.href} href={item.href} className={linkClass}>
                 {item.label}
               </Link>
             ))}
+
+          {/* Auth controls */}
+          {authed !== null && (
+            <span className="w-px h-5 bg-line mx-1" aria-hidden />
+          )}
+          {authed === true && (
+            <>
+              <Link href="/account" className={linkClass}>
+                Account
+              </Link>
+              <form action="/auth/signout" method="post">
+                <button type="submit" className={linkClass}>
+                  Log out
+                </button>
+              </form>
+            </>
+          )}
+          {authed === false && (
+            <Link
+              href="/login"
+              className="px-3 py-2 rounded-md text-primary hover:text-cream hover:bg-bg-elev transition-colors"
+            >
+              Log in
+            </Link>
+          )}
         </nav>
 
         {/* Mobile menu button */}
@@ -68,7 +126,7 @@ export function Header() {
         id="mobile-nav"
         className={
           "md:hidden border-t border-line overflow-hidden transition-[max-height,opacity] duration-300 ease-out " +
-          (open ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0")
+          (open ? "max-h-[720px] opacity-100" : "max-h-0 opacity-0")
         }
       >
         <nav className="px-4 py-3 flex flex-col">
@@ -94,6 +152,39 @@ export function Header() {
                 </span>
               </span>
             ),
+          )}
+
+          {/* Auth controls */}
+          {authed !== null && (
+            <div className="mt-2 pt-2 border-t border-line flex flex-col">
+              {authed ? (
+                <>
+                  <Link
+                    href="/account"
+                    onClick={close}
+                    className="px-3 py-3 rounded-md text-ink hover:text-primary hover:bg-bg-elev transition-colors"
+                  >
+                    Account
+                  </Link>
+                  <form action="/auth/signout" method="post" onSubmit={close}>
+                    <button
+                      type="submit"
+                      className="w-full text-left px-3 py-3 rounded-md text-ink hover:text-primary hover:bg-bg-elev transition-colors"
+                    >
+                      Log out
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={close}
+                  className="px-3 py-3 rounded-md text-primary hover:text-cream hover:bg-bg-elev transition-colors"
+                >
+                  Log in
+                </Link>
+              )}
+            </div>
           )}
         </nav>
       </div>
