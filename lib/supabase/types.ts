@@ -20,6 +20,7 @@ export type Database = {
         {
           id: string;
           full_name: string | null;
+          email: string | null;
           role: "visitor" | "staff" | "admin";
           created_at: string;
           updated_at: string;
@@ -27,10 +28,12 @@ export type Database = {
         {
           id: string;
           full_name?: string | null;
+          email?: string | null;
           role?: "visitor" | "staff" | "admin";
         },
         Partial<{
           full_name: string | null;
+          email: string | null;
           role: "visitor" | "staff" | "admin";
         }>
       >;

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Mail,
   Store,
+  Users,
 } from "lucide-react";
 import { getCurrentRole, getCurrentUser } from "@/lib/auth";
 
@@ -18,6 +19,7 @@ const nav = [
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/vendors", label: "Vendor apps", icon: Store },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
+  { href: "/admin/team", label: "Team", icon: Users },
   { href: "/admin/password", label: "Password", icon: KeyRound },
 ];
 
