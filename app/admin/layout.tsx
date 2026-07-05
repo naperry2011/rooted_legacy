@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   CalendarPlus,
   Inbox,
+  KeyRound,
   LayoutDashboard,
   Mail,
   Store,
@@ -17,6 +18,7 @@ const nav = [
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/vendors", label: "Vendor apps", icon: Store },
   { href: "/admin/messages", label: "Messages", icon: Inbox },
+  { href: "/admin/password", label: "Password", icon: KeyRound },
 ];
 
 export default async function AdminLayout({

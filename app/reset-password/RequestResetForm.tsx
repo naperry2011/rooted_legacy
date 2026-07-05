@@ -1,25 +1,34 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import {
   Field,
   FormAlert,
   Input,
   SubmitButton,
 } from "@/components/forms/fields";
-import { signIn, type LoginState } from "./actions";
+import { requestReset, type ResetState } from "./actions";
 
-export function LoginForm({ next }: { next?: string }) {
-  const [state, formAction, pending] = useActionState<LoginState, FormData>(
-    signIn,
+export function RequestResetForm() {
+  const [state, formAction, pending] = useActionState<ResetState, FormData>(
+    requestReset,
     undefined,
   );
 
+  if (state?.ok) {
+    return (
+      <div className="rounded-2xl border border-line bg-bg-elev p-6">
+        <h2 className="font-display text-2xl text-cream">Check your email</h2>
+        <p className="mt-2 text-ink-muted">
+          If an account exists for that address, we just sent a link to reset
+          your password. It expires in 1 hour.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form action={formAction} className="space-y-5">
-      {next && <input type="hidden" name="next" value={next} />}
-
       <Field label="Email" name="email">
         <Input
           id="email"
@@ -32,21 +41,10 @@ export function LoginForm({ next }: { next?: string }) {
         />
       </Field>
 
-      <Field label="Password" name="password">
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          placeholder="••••••••"
-        />
-      </Field>
-
       {state?.error && <FormAlert kind="error">{state.error}</FormAlert>}
 
       <SubmitButton pending={pending} className="w-full sm:w-auto">
-        Sign in
+        Send reset link
       </SubmitButton>
     </form>
   );
