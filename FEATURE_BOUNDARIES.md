@@ -14,10 +14,10 @@ Does NOT Own: Long-form history articles (delegated to /history)
 Communicates With: content/site.ts (description, address); public/gallery/grand-opening-class.jpg; links to /history/black-history-in-farming, /events, /contact
 Isolation Level: Strong
 
-## Auth (app/login/* + app/auth/* + middleware.ts + lib/auth.ts)
+## Auth (app/login/* + app/reset-password/* + app/auth/* + middleware.ts + lib/auth.ts)
 
-Owns: Magic-link sign-in flow, session refresh, role resolution, route gating for /admin and /account
-Communicates With: Supabase Auth + profiles table; ADMIN_EMAIL_ALLOWLIST
+Owns: Email+password sign-in, password change (`/admin/password`) + hardened reset (`/reset-password` → `/auth/confirm` verifyOtp → isolated update page → global sign-out), session refresh, role resolution, route gating for /admin and /account
+Communicates With: Supabase Auth + profiles table; ADMIN_EMAIL_ALLOWLIST; Resend (SMTP, via Supabase)
 Isolation Level: Strong
 
 ## Account (app/account/*)
@@ -92,10 +92,11 @@ Isolation Level: Strong
 
 ## Admin (app/admin/* + components/admin/*)
 
-Owns: Role-gated dashboard, read-only list views (bookings, subscribers, vendors, messages)
-Does NOT Own: Edit workflows (Phase 2)
-Communicates With: createAdminClient; lib/auth.ts requireAdmin
+Owns: Role-gated dashboard; **events CRUD** (create/edit/delete + attendees + CSV); **invite-only team onboarding** (create/revoke admins); password change; read-only list views (bookings, subscribers, vendors, messages)
+Does NOT Own: Vendor approval → directory, gallery uploads, refunds (later Phase 2)
+Communicates With: createAdminClient (incl. auth.admin.createUser); lib/auth.ts requireAdmin
 Isolation Level: Strong
+Note: layout redirects to /reset-password/update while a `pw_reset_pending` cookie is set (recovery must set a new password first)
 
 ## Weather (app/weather/* + components/weather/* + lib/weather.ts)
 

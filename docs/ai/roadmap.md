@@ -8,19 +8,17 @@ Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German 
 
 ## Current Focus
 
-**Theme:** Wrap Phase 1 MVP, get image assets on disk, walk the client through the demo, kick off Phase 2.
+**Theme:** Auth + admin CRUD shipped and live on the custom domain. Next: firm up Phase 2 payment scope.
 **Goals:**
-1. Get the 5 missing image files saved + committed; verify Vercel deploy renders fully
-2. Client demo walk-through; capture feedback on ticket model, refund policy, day-of-ops scope, CSA pricing
-3. Begin Phase 2 (Stripe + paid tickets + farm-stand checkout + CSA + admin CRUD) once decisions are firm
+1. ✅ Authenticated admin (email+password login, invite-only onboarding, functional hardened reset)
+2. ✅ Live on `https://rootedlegacyfarm.com` with branded Resend auth email
+3. Decide Phase 2 payment scope (Stripe tickets / farm-stand / CSA), then build
 
 ## Now
 
-- User saves grand-opening-*.jpg (4 files) to `public/gallery/` and `flyer_soothing_sundays.jpg` to `public/brand/`, commits + pushes
-- Verify deploy: Soothing Sundays detail page renders flair, Grand Opening shows "From the day" gallery, /about hero shows the class photo, /vendors shows Pure-trition truck
-- Merge `perry-v2 → main`
-- Rotate Supabase + OpenWeather dev keys after merge
-- Client walk-through; capture feedback
+- Firm up Phase 2 payment decisions (ticket model, refund policy, CSA pricing/cadence)
+- Rotate Supabase + OpenWeather dev keys shared early on
+- Optional polish: swap hardcoded vercel.app fallbacks → custom domain; kill other sessions on logged-in password change
 
 ## Next
 
@@ -29,7 +27,7 @@ Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German 
   - Promote `is_featured`/`price_cents` into actual paid-ticket flow for Soothing Sundays (currently shows "Tickets opening soon" placeholder)
   - Migrations for ticket_types, orders, tickets, shop_orders + items, csa_plans + memberships + pickups, wholesale_buyers + orders + items
   - QR-coded ticket emails on `checkout.session.completed` webhook
-  - Full admin CRUD: event editor, vendor approval (promotes from vendor_applications → DB-backed vendor_profiles, retiring content/vendors.ts), refund flow, gallery photo uploads
+  - Remaining admin CRUD: vendor approval (promotes vendor_applications → DB-backed vendor_profiles, retiring content/vendors.ts), refund flow, gallery photo uploads (event editor + team management already shipped 2026-07)
   - File uploads for vendor logos + gallery photos via Supabase Storage signed URLs
 
 ## Later
@@ -48,6 +46,10 @@ Rooted Legacy is the digital home of an Indianapolis urban farm at 865 N German 
 
 ## Recently Completed
 
+- Authenticated admin: email+password login, invite-only onboarding, hardened password reset — 2026-07-05/06
+- Admin Events CRUD manager (create/edit/delete + attendees + CSV) — 2026-07-05
+- Custom domain `rootedlegacyfarm.com` + Resend SMTP auth email — 2026-07-06
+- Profiles RLS lockdown (migration 0003) closing self-promotion — 2026-07-06
 - Soothing Sundays event + featured-event flair (event schema + detail page treatment) — 2026-05-22
 - Event photo linkage ("From the day" on event detail) — 2026-05-22
 - `/about` page with photo hero + values + history CTA — 2026-05-22

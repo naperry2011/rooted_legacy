@@ -4,8 +4,8 @@
 
 ## Project Overview
 
-**Tech Stack:** Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth + Storage) · Resend · Google Sheets API · OpenWeather · MDX (next-mdx-remote) · Vercel hosting
-**Status:** Phase 1 MVP on `perry-v2` branch; client provisioning + reviewing
+**Tech Stack:** Next.js 16 (App Router, React 19) · TypeScript · Tailwind CSS v4 · Supabase (Postgres + Auth (email+password) + Storage) · Resend (custom SMTP) · Google Sheets API · OpenWeather · MDX (next-mdx-remote) · Vercel hosting
+**Status:** Live in production at https://rootedlegacyfarm.com. Auth + admin CRUD (events, team) shipped; Phase 2 payments pending
 **Purpose:** Public site + lightweight backoffice for a Black-led urban farm and its partners (Bodi Buzz, Cre8tive Alignment Network, Pure-trition). Single developer maintains.
 
 ## Core Documentation
@@ -92,7 +92,9 @@
 
 **To add a recipe:** create `content/recipes/your-slug.mdx` with `ingredients` (array). Shop items whose name matches any ingredient cross-link to it.
 
-**To add an event:** INSERT into the Supabase `events` table. Set `status='published'`. For a featured event, set `is_featured=true` + `tagline` + `themes` (jsonb array of strings) + `included_perks` (jsonb) + `price_cents`.
+**To add an event:** use the admin UI at `/admin/events → New event` (create/edit/delete + attendees + CSV). Drafts stay off the public site until `status=published`. (Direct `events` table inserts still work but the UI is the intended path.)
+
+**To add an admin:** `/admin/team → Add an admin` (invite-only) — creates a full-admin account with a temp password. Or add the email to `ADMIN_EMAIL_ALLOWLIST` in Vercel for a "root" admin. New admins get `profiles.role='admin'`; they change their temp password at `/admin/password`.
 
 **To add a vendor to the directory:** append to `featuredVendors` in `content/vendors.ts`. Long-term partners go in `site.partners` in `content/site.ts`.
 
@@ -136,6 +138,6 @@
 
 ## Git Workflow
 
-- `main` — production; Vercel auto-deploys
-- `perry-v2` — sole working branch; PR into `main` when ready
-- All historical branches deleted
+- `main` — production; Vercel auto-deploys to https://rootedlegacyfarm.com
+- Cut a **fresh feature branch off `origin/main`** for each change; open a PR that **squash-merges** into `main`
+- **Never merge `main` back** into a feature branch, and don't keep a long-lived working branch — that dropped committed work twice (the old `perry-v2` was deleted for this reason)

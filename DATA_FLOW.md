@@ -8,13 +8,21 @@ Processor: Next.js App Router dispatches to RSC
 Storage: Supabase auth.users
 Downstream Consumers: RSC reads via createServerClient (cookies); writes via createAdminClient (service role)
 
-## Magic-link Sign-in
+## Email + Password Sign-in
 
 Source: `/login` form submit
-Transport: Server action `sendMagicLink` → `supabase.auth.signInWithOtp`
-Processor: Supabase Auth sends email
-Storage: auth.users (created on first sign-in)
-Downstream Consumers: User clicks email link → `/auth/callback?code=…` → cookie set → redirect to `next` or `/account`. Trigger `handle_new_user` creates a `profiles` row.
+Transport: Server action `signIn` → `supabase.auth.signInWithPassword`
+Processor: Supabase Auth validates credentials, sets session cookie
+Storage: auth.users / profiles (role)
+Downstream Consumers: `getCurrentRole()` → admins redirect to `/admin`, others `/account`. No public signup; accounts are created by an admin at `/admin/team`.
+
+## Password Reset (hardened)
+
+Source: `/reset-password` form → server action `requestReset` → `supabase.auth.resetPasswordForEmail`
+Transport: Resend SMTP sends the branded email from `noreply@rootedlegacyfarm.com`
+Processor: Email link → `/auth/confirm?token_hash=…&type=recovery` → `verifyOtp` sets a session + `pw_reset_pending` cookie → isolated `/reset-password/update`
+Storage: auth.users (password), session cookies
+Downstream Consumers: Admin area is blocked (cookie gate) until save; saving updates the password, clears the cookie, and `signOut({ scope: 'global' })` → back to `/login`.
 
 ## Event Listing / Detail Render
 

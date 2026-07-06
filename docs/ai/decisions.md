@@ -96,7 +96,7 @@ Staff edits one shared sheet. `lib/sheets.ts` reads via service-account JWT, cac
 ## ADR-010: Read-only admin in MVP
 
 **Date:** 2026-05-22
-**Status:** Accepted
+**Status:** Superseded by ADR-015 (2026-07 — admin CRUD for events + team shipped)
 
 `/admin` has dashboard + 4 list views. Edits happen in Supabase Studio. Phase 2 introduces forms.
 
@@ -170,5 +170,97 @@ Root layout's `openGraph.images` defaults to `/gallery/grand-opening-vendors-ten
 - **Positive:** shares show actual farm life
 - **Negative:** the default depends on a file that must be saved before it works; until then social previews fall back to whatever crawler default
 - **Neutral:** routes that don't override (history, recipes, contact) all show the market photo — fine for now, can be customized per-route later
+
+---
+
+## ADR-014: Email + password auth (magic link removed)
+
+**Date:** 2026-07-05
+**Status:** Accepted
+
+**Context**
+Magic-link OTP was fussy for the owner: email round-trip, links that expire, and Supabase's built-in mailer rate limit ("email rate limit exceeded"). Only admins log in (RSVP is guest-based), so a password is simpler.
+
+**Decision**
+`app/login/actions.ts` uses `signInWithPassword`. No public signup. Passwords are set by an admin (see ADR-015) or via the reset flow (ADR-016). On success, admins redirect to `/admin`, others to `/account`.
+
+**Consequences**
+- **Positive:** no email dependency to log in; simpler mental model.
+- **Negative:** password recovery still needs email (ADR-016 + ADR-017).
+- **Neutral:** `/auth/callback` (the old magic-link code-exchange route) is now unused but left in place.
+
+---
+
+## ADR-015: Invite-only admin onboarding via DB role
+
+**Date:** 2026-07-06
+**Status:** Accepted (supersedes ADR-010)
+
+**Context**
+The owner wants to add other admins but be the sole approver. `getCurrentRole()` already falls back to `profiles.role` when an email isn't in `ADMIN_EMAIL_ALLOWLIST`, so a DB `role='admin'` confers admin without an allowlist edit.
+
+**Decision**
+`/admin/team` (invite-only, no public signup): owner creates full-admin accounts with a temp password via `admin.auth.admin.createUser({ email_confirm: true })`, then sets `profiles.role='admin'`. Revoke sets role back to `visitor`. Owner stays admin via the allowlist (root admin). No email verification.
+
+**Consequences**
+- **Positive:** zero new tables; reuses roles + admin client; owner controls access.
+- **Negative:** owner must share the temp password out-of-band; invitees change it at `/admin/password`.
+- **Neutral:** all real accounts are admins, so the header shows "Admin" to any logged-in user.
+
+**Requires** ADR-018 (RLS lockdown) — otherwise a user could self-promote.
+
+---
+
+## ADR-016: Hardened password-reset flow
+
+**Date:** 2026-07-06
+**Status:** Accepted
+
+**Context**
+Default Supabase reset links return the token in the URL hash, invisible to a server route (`/auth/callback` → `missing_code`). And a recovery session is a *full* session — clicking a reset link logged the user straight into the dashboard before changing anything.
+
+**Decision**
+Email template links to `/auth/confirm?token_hash=…&type=recovery&next=/reset-password/update`. `/auth/confirm` verifies server-side via `verifyOtp`, sets a `pw_reset_pending` cookie, and lands on an isolated update page. The admin layout redirects to that page while the cookie is set (no dashboard access until reset). Saving updates the password, clears the cookie, and `signOut({ scope: 'global' })` kills all sessions → forces re-login. Normal login also clears the cookie.
+
+**Consequences**
+- **Positive:** reset can't roam the admin area; changing the password boots every device; server-side verify works cross-device (no PKCE cookie needed).
+- **Negative:** requires editing the Supabase reset email template (`next=/reset-password/update`).
+- **Neutral:** the logged-in `/admin/password` change does NOT kill other sessions (deliberate action) — optional future add.
+
+---
+
+## ADR-017: Custom domain + Resend SMTP for auth email
+
+**Date:** 2026-07-06
+**Status:** Accepted
+
+**Context**
+Reset emails require a real sending domain; you can't verify a `vercel.app` address, and the built-in Supabase mailer is rate-limited.
+
+**Decision**
+Registered `rootedlegacyfarm.com` (Namecheap DNS → Vercel A/CNAME). Verified it in Resend (DKIM/SPF/MX on the `send` subdomain). Set Resend as Supabase custom SMTP (`smtp.resend.com:465`, user `resend`, sender `noreply@rootedlegacyfarm.com`). Supabase Site URL = apex; both `www` and apex `/**` allowlisted.
+
+**Consequences**
+- **Positive:** branded, reliable auth email; lifts the rate limit; permanent site URL.
+- **Negative:** DNS is managed at Namecheap (MX lives under "Custom MX" mail settings, not Host Records).
+- **Neutral:** app still has hardcoded `rooted-legacy-phi.vercel.app` fallbacks in a few actions — harmless, could be swapped to the custom domain later.
+
+---
+
+## ADR-018: Column-level RLS lockdown on profiles.role
+
+**Date:** 2026-07-06
+**Status:** Accepted
+
+**Context**
+`profiles_self_update` (`for update using (auth.uid()=id)`) had no column restriction, so a signed-in user could set their own `role='admin'`. Postgres table-level UPDATE implies all columns, so a column REVOKE alone isn't enough.
+
+**Decision**
+Migration `0003_admin_onboarding.sql`: `revoke update on public.profiles from authenticated, anon;` then `grant update (full_name) on public.profiles to authenticated;`. Role changes now require the service-role admin client. Also added `profiles.email` (+ `handle_new_user` trigger update + backfill) for the Team list.
+
+**Consequences**
+- **Positive:** closes privilege escalation; users can still edit their own name.
+- **Negative:** any future user-editable profile column needs an explicit column grant.
+- **Neutral:** hand-maintained `lib/supabase/types.ts` updated for `email` (per ADR-008).
 
 ---
