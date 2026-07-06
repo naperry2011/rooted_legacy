@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; reset?: string }>;
 }) {
   const params = await searchParams;
   const user = await getCurrentUser().catch(() => null);
@@ -32,6 +32,15 @@ export default async function LoginPage({
           Sign in with your email and password.
         </p>
       </header>
+
+      {params.reset === "done" && (
+        <p
+          className="mb-6 text-sm rounded-xl border border-line bg-bg-elev px-4 py-3 text-leaf"
+          role="status"
+        >
+          Password updated. Sign in with your new password.
+        </p>
+      )}
 
       <LoginForm next={params.next} />
     </div>

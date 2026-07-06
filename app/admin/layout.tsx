@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import {
   CalendarCheck,
   CalendarPlus,
@@ -10,7 +11,7 @@ import {
   Store,
   Users,
 } from "lucide-react";
-import { getCurrentRole, getCurrentUser } from "@/lib/auth";
+import { getCurrentRole, getCurrentUser, PW_RESET_COOKIE } from "@/lib/auth";
 
 const nav = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -28,6 +29,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // A recovery session must finish setting its new password before it can use
+  // the admin area (see /auth/confirm + /reset-password/update).
+  const cookieStore = await cookies();
+  if (cookieStore.get(PW_RESET_COOKIE)) redirect("/reset-password/update");
+
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/admin");
   const role = await getCurrentRole();
