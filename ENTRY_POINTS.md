@@ -79,14 +79,16 @@ Invokes: VendorForm → app/vendors/apply/actions.ts → createAdminClient + sen
 
 ### Login
 Path: `app/login/page.tsx`
-Invokes: LoginForm → app/login/actions.ts → supabase.auth.signInWithOtp
+Invokes: LoginForm → app/login/actions.ts → supabase.auth.signInWithPassword (admins redirect to /admin)
 
-### Callback
-Path: `app/auth/callback/route.ts`
-Responsibility: Exchanges OTP `code` query param for a session
+### Password reset (request + confirm + update)
+Paths: `app/reset-password/page.tsx` (request → resetPasswordForEmail), `app/auth/confirm/route.ts` (token_hash → verifyOtp), `app/reset-password/update/*` (isolated set-new-password → global sign-out)
+
+### Confirm / Callback
+Path: `app/auth/confirm/route.ts` (server-side verifyOtp for email links). `app/auth/callback/route.ts` is the legacy magic-link code exchange (now unused).
 
 ### Sign-out
-Path: `app/auth/signout/route.ts`
+Path: `app/auth/signout/route.ts` (303 redirect to `/`)
 
 ## Account Route
 
@@ -97,11 +99,15 @@ Responsibility: Lists current user's RSVPs; sign-out button
 
 ### Layout
 Path: `app/admin/layout.tsx`
-Responsibility: Gate via lib/auth.ts; sidebar nav
+Responsibility: Gate via lib/auth.ts; redirect to /reset-password/update if `pw_reset_pending`; sidebar nav
 
-### Dashboard + list views
+### Dashboard + read-only list views
 Paths: `app/admin/page.tsx`, `app/admin/{bookings,subscribers,vendors,messages}/page.tsx`
 Invokes: createAdminClient
+
+### CRUD pages
+Paths: `app/admin/events/{page,new,[id]}`, `app/admin/team/page.tsx`, `app/admin/password/page.tsx`
+Invokes: createAdminClient; server actions guarded by requireAdmin
 
 ## API Routes
 
@@ -110,7 +116,11 @@ Path: `app/api/newsletter/confirm/route.ts`
 
 ## Server Actions
 
-- `app/login/actions.ts` → sendMagicLink
+- `app/login/actions.ts` → signIn (email+password)
+- `app/reset-password/actions.ts` → requestReset; `app/reset-password/update/actions.ts` → resetPassword
+- `app/admin/events/actions.ts` → upsertEvent / deleteEvent / cancelBooking
+- `app/admin/team/actions.ts` → createTeamMember / revokeMember
+- `app/admin/password/actions.ts` → updatePassword
 - `app/events/[slug]/actions.ts` → createBooking
 - `app/actions/newsletter.ts` → subscribeToNewsletter
 - `app/vendors/apply/actions.ts` → submitVendorApplication

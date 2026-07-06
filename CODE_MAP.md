@@ -102,21 +102,25 @@ External Integrations:
 Entry Points:
 - `/vendors`, `/vendors/apply`
 
-## Auth (Magic-link)
+## Auth (Email + password)
 
 Category: Service + UI
 
 Primary Files:
-- app/login/page.tsx, LoginForm.tsx, actions.ts
-- app/auth/callback/route.ts, signout/route.ts
-- lib/auth.ts (getCurrentUser, getCurrentRole, requireAdmin)
+- app/login/page.tsx, LoginForm.tsx, actions.ts (signInWithPassword; admins → /admin)
+- app/reset-password/page.tsx (+ actions) — request a reset email
+- app/reset-password/update/** — isolated set-new-password page (recovery landing)
+- app/auth/confirm/route.ts — server-side token_hash verifyOtp (reset/invite links)
+- app/auth/callback/route.ts (legacy magic-link code exchange, now unused), signout/route.ts (303)
+- lib/auth.ts (getCurrentUser, getCurrentRole, requireAdmin, PW_RESET_COOKIE)
 - middleware.ts (protects /admin/*, /account/*)
 
 External Integrations:
-- Supabase Auth (OTP / magic link)
+- Supabase Auth (email + password; password recovery via email)
+- Resend SMTP (auth emails from noreply@rootedlegacyfarm.com)
 
 Entry Points:
-- `/login`, `/auth/callback`, `/auth/signout`
+- `/login`, `/reset-password`, `/reset-password/update`, `/auth/confirm`, `/auth/signout`
 
 ## Account Area
 
@@ -212,18 +216,25 @@ Entry Points:
 - `/gallery`
 - Event detail pages render `listPhotosForEvent(event.id)` as "From the day"
 
-## Admin (Read-only)
+## Admin (CRUD + read-only views)
 
-Category: UI
+Category: UI + Service
 
 Primary Files:
-- app/admin/layout.tsx (role-gated)
-- app/admin/page.tsx
-- app/admin/{bookings,subscribers,vendors,messages}/page.tsx
+- app/admin/layout.tsx (role-gated; also gates on PW_RESET_COOKIE → /reset-password/update)
+- app/admin/page.tsx (dashboard)
+- app/admin/events/** — CRUD: page (list), new, [id] (edit + attendees + CSV), actions.ts, EventForm, DeleteEventButton, ExportCsvButton
+- app/admin/team/** — invite-only admin onboarding: page (list + add), AddMemberForm, actions.ts (createTeamMember/revokeMember)
+- app/admin/password/** — change password while logged in
+- app/admin/{bookings,subscribers,vendors,messages}/page.tsx — read-only list views
 - components/admin/DataTable.tsx
+- lib/validations/event.ts
+
+External Integrations:
+- Supabase (service-role admin client for reads + writes, incl. auth.admin.createUser)
 
 Entry Points:
-- `/admin`, `/admin/*`
+- `/admin`, `/admin/events`, `/admin/events/[id]`, `/admin/events/new`, `/admin/team`, `/admin/password`, `/admin/*`
 
 ## Weather
 

@@ -21,8 +21,8 @@ Rooted Legacy is a content-driven marketing-plus-application site for an Indiana
 - **Key files:** `app/about/page.tsx`, `public/gallery/grand-opening-class.jpg`
 
 ### Auth + Account
-- **Responsibility:** Magic-link sign-in, session cookie refresh, role resolution, `/account`
-- **Key files:** `middleware.ts`, `lib/auth.ts`, `lib/supabase/server.ts`, `app/login/*`, `app/auth/*`, `app/account/page.tsx`
+- **Responsibility:** Email+password sign-in, password change + hardened reset, session refresh, role resolution, `/account`
+- **Key files:** `middleware.ts`, `lib/auth.ts`, `lib/supabase/server.ts`, `app/login/*`, `app/reset-password/*`, `app/auth/confirm/route.ts`, `app/auth/*`, `app/account/page.tsx`
 
 ### Marketing Home
 - **Responsibility:** Hero + What We Do + side-by-side WhatsGrowing/Weather + Location + Partners
@@ -60,9 +60,9 @@ Rooted Legacy is a content-driven marketing-plus-application site for an Indiana
 - **Responsibility:** Photo grid for `/gallery`; per-event photo lookup via `listPhotosForEvent`; path resolution (local /public vs Supabase Storage)
 - **Key files:** `lib/gallery.ts`, `app/gallery/page.tsx`, event detail page
 
-### Admin (Read-only)
-- **Responsibility:** Role-gated dashboard + 4 list views
-- **Key files:** `app/admin/**`, `components/admin/DataTable.tsx`, `lib/auth.ts` (requireAdmin)
+### Admin (CRUD + read-only views)
+- **Responsibility:** Role-gated dashboard; **events CRUD** + attendees/CSV; **invite-only team onboarding**; password change; read-only bookings/subscribers/vendors/messages lists
+- **Key files:** `app/admin/events/**`, `app/admin/team/**`, `app/admin/password/**`, `app/admin/**`, `components/admin/DataTable.tsx`, `lib/auth.ts` (requireAdmin)
 
 ### Weather
 - **Responsibility:** OpenWeather current + hourly + daily; home widget; ISR
@@ -124,7 +124,7 @@ Rooted Legacy is a content-driven marketing-plus-application site for an Indiana
 
 ## Known Constraints / Trade-offs
 
-- **No CMS** — content edits via PRs or Supabase Studio. Phase 2 admin CRUD will close this gap.
+- **Partial CMS** — events + admin team are managed in-app (`/admin/events`, `/admin/team`); vendors/gallery/produce still edited via code/Sheets/Studio until later Phase 2 CRUD.
 - **Free-tier Supabase + Resend + OpenWeather** — sufficient for v1.
 - **Single revalidate strategy (15–30 min)** — fine for marketing; not real-time.
 - **No tests** — risk for the demo; Phase 2 prerequisite before interactive flows ship.

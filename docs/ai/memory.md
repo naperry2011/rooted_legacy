@@ -4,9 +4,13 @@ Running history of what's been built and current state. Update after major chang
 
 ## Current State
 
-**Status:** Active Development — Phase 1 MVP shipped on `perry-v2`; client provisioning Supabase + reviewing
-**Last Updated:** 2026-05-22
-**Version:** perry-v2 @ `c412af9`
+**Status:** Live in production at https://rootedlegacyfarm.com (custom domain). Phase 2 auth + admin CRUD shipped.
+**Last Updated:** 2026-07-06
+**Version:** `main` (deployed on Vercel); working branches created fresh off `main` per PR
+
+> Branch note: the old `perry-v2` branch was deleted 2026-07-06 after a squash-merge-then-merge-back
+> workflow silently dropped committed work twice. New rule: branch fresh off `origin/main` for each
+> change; never merge `main` back into a feature branch. Each PR squash-merges to `main`.
 
 ### What's Working
 - Marketing v1 (home / events / history / weather / gallery / contact) — mobile-responsive, deployed
@@ -18,20 +22,49 @@ Running history of what's been built and current state. Update after major chang
 - /shop catalog + WhatsGrowing widget reading Google Sheets (when configured)
 - 2 seed recipes; /recipes index + slug pages
 - Default Open Graph image set to a community photo; Twitter card configured
-- /admin role-gated dashboard with read-only list views
+- **Full admin CRUD** — `/admin/events` (create/edit/delete events + per-event attendees + CSV export); `/admin/team` (invite-only admin onboarding); the other list views remain read-only
+- **Email + password auth** (magic link removed). Login → admins land on `/admin`, others `/account`
+- **Password lifecycle**: `/admin/password` (change while logged in) + hardened forgot-password reset (`/reset-password` → `/auth/confirm` token_hash verify → isolated `/reset-password/update` page → signs out all sessions → re-login)
+- **Header auth controls**: Log in / Admin · Account · Log out (browser-side auth check, keeps pages static)
+- **Resend transactional email is LIVE** via custom SMTP from `noreply@rootedlegacyfarm.com` (verified domain)
 - All external integrations degrade gracefully when env vars missing
+- 5 Grand Opening / flyer images are on disk and rendering
 
 ### Known Issues
-- The 4 Grand Opening photos and the Soothing Sundays flyer haven't been saved to disk yet (`public/gallery/grand-opening-*.jpg` and `public/brand/flyer_soothing_sundays.jpg`). The image placeholders render with broken `<img>` until those files exist + commit.
-- Resend, Google Sheets, and the Supabase Storage `gallery` bucket are not yet provisioned by the client — site shows "Not configured" notices in those spots
-- Vercel project still needs Supabase + Resend + Sheets env vars set (Supabase keys configured in `.env.local` and likely in Vercel; not verified for Resend/Sheets)
-- Supabase dev keys + OpenWeather key shared in chat history; rotate before public launch
+- Google Sheets (produce) and the Supabase Storage `gallery` bucket are still not provisioned — those spots show "Not configured" notices
+- Supabase dev keys + OpenWeather key were shared in chat history early on; rotate before wider launch
+- `www` vs apex: Supabase Site URL is the apex `https://rootedlegacyfarm.com`; both `www` and apex are allowlisted. Site resolves on both.
 
 ### In Progress
-- User saving 5 image files + committing them
-- Phase 2 design (Stripe + paid tickets + CSA + admin CRUD) deferred until client signs off on the demo
+- Stripe / paid tickets / CSA still deferred (Phase 2 payments)
+- Optional: also kill other sessions on the logged-in `/admin/password` change (currently only the reset flow does)
 
 ## Implementation History
+
+### 2026-07-05/06 — Auth overhaul, admin CRUD, custom domain (Phase 2, part 1)
+**What was built:** A full authenticated-admin experience, shipped as a series of squash-merged PRs:
+- **Admin Events manager** (`app/admin/events/**`): create/edit/delete events via a form, per-event
+  attendees view with Cancel + CSV export. Supersedes the read-only MVP admin (ADR-010).
+- **Header auth controls** (`components/layout/Header.tsx`): Log in / Account / Log out, browser-side
+  auth detection so pages stay statically rendered.
+- **Email + password login** (`app/login/**`): replaced magic-link OTP with `signInWithPassword`;
+  fixed a 405 logout bug (303 redirect); admins redirect to `/admin` on login + an "Admin" header link.
+- **Invite-only admin onboarding** (`app/admin/team/**`): owner creates full-admin accounts with a temp
+  password (no email/verification) via `admin.auth.admin.createUser` + `profiles.role='admin'`; revoke
+  sets role back to `visitor`.
+- **Security migration `0003_admin_onboarding.sql`**: revoked `UPDATE(role)` on `profiles` from
+  authenticated/anon (closed a self-promotion hole); added `profiles.email` (+ trigger + backfill).
+- **Password change + hardened reset**: `/admin/password` (logged-in change); forgot-password via
+  `/reset-password` → `resetPasswordForEmail` → `/auth/confirm` (server-side `verifyOtp` on `token_hash`,
+  since the default hash-fragment link is invisible to a server route) → isolated `/reset-password/update`
+  page. A `pw_reset_pending` cookie blocks the admin area until the new password is set; saving signs out
+  ALL sessions (`scope: global`) and forces re-login.
+- **Custom domain + email**: registered `rootedlegacyfarm.com` (Namecheap DNS, A/CNAME to Vercel),
+  verified it in Resend (DKIM/SPF/MX on the `send` subdomain), and wired Resend as Supabase's SMTP so
+  auth emails send from `noreply@rootedlegacyfarm.com`. Branded the reset email template.
+**Files affected:** app/admin/{events,team,password}/**, app/reset-password/**, app/auth/confirm/route.ts,
+app/login/**, components/layout/Header.tsx, lib/auth.ts, lib/supabase/types.ts,
+supabase/migrations/0003_admin_onboarding.sql
 
 ### 2026-05-11 — Foundation
 **What was built:** Next.js 15 + Tailwind v4 + TypeScript scaffold; brand tokens; home (Hero / WhatWeDo / LocationCard / PartnerStrip); MDX history; site shell
@@ -67,7 +100,7 @@ Running history of what's been built and current state. Update after major chang
 
 ## Architecture Evolution
 
-Stack: Next.js 15 App Router + TypeScript + Tailwind v4. Supabase (Postgres + Auth + Storage) for the backend. Resend for transactional + newsletter email. Google Sheets API for produce inventory (staff-managed). MDX still powers long-form prose (history, recipes). Hosted on Vercel with `main` as production and `perry-v2` as the single working branch. Phase 2 will add Stripe (tickets, farm-stand, CSA) and full admin CRUD; Phase 3 covers day-of operations.
+Stack: **Next.js 16** App Router (React 19) + TypeScript + Tailwind v4. Supabase (Postgres + Auth + Storage) for the backend, with **email+password auth** and DB-role-based admin access. Resend for transactional + auth email (custom SMTP on the verified `rootedlegacyfarm.com` domain). Google Sheets API for produce inventory (staff-managed). MDX still powers long-form prose (history, recipes). Hosted on Vercel; production is `main` at the custom domain **https://rootedlegacyfarm.com**; feature branches are cut fresh off `main` per PR. Admin CRUD (events + team) has shipped; Phase 2 payments (Stripe tickets/farm-stand/CSA) and Phase 3 day-of ops remain.
 
 See architecture.md for the component-by-component map.
 
@@ -83,3 +116,10 @@ See architecture.md for the component-by-component map.
 - Migrations and seed must be applied in numeric order. The seed references the columns added by 0002, so attempting to seed before applying 0002 errors with `42703: column "..." does not exist`.
 - Image binary content can't flow from chat into the repo — the user has to save attachments to specific paths. Predictable filenames + a `.gitkeep` placeholder folder make this less error-prone.
 - `lucide-react` does not export an `Instagram` icon; use `AtSign` for handles or hand-roll an SVG for brand-specific marks.
+- **Squash-merge + merge-back eats work.** Squashing a PR to `main` then merging `main` back into the feature branch caused conflict resolutions that silently dropped committed changes (the reset-password link, twice). Fix: reset/recreate the working branch off `origin/main` after each merge; never merge back.
+- **Supabase password-reset links use the URL hash** (`#access_token=…` / `#error=…`), which a server route handler can't read — the old `/auth/callback` returned `missing_code`. Use the `token_hash` + `verifyOtp` pattern with a dedicated `/auth/confirm` route instead.
+- **A recovery session is a full session.** Clicking a reset link logs the user in with full access before they set a new password. Gate it: mark a `pw_reset_pending` cookie, force the isolated update page, and sign out `scope: 'global'` on save.
+- **Supabase profiles RLS needs column-level lockdown.** `for update using (auth.uid()=id)` lets a user change ANY column of their own row, including `role`. `revoke update (role)` + `grant update (full_name)` closes self-promotion; the service-role client still sets roles.
+- **Postgres column privileges override RLS.** Table-level `UPDATE` implies all columns regardless of column grants — you must `revoke update` at the table level, then `grant update (allowed_cols)`.
+- **Resend needs a verified domain** — you cannot send from a `vercel.app` address. The built-in Supabase mailer is rate-limited (a few/hour) and is why reset emails "stopped"; wiring custom SMTP (Resend) fixes both deliverability and the rate limit. `onboarding@resend.dev` only sends to the account owner.
+- **Vercel's current apex A record is `216.198.79.1`** (not the older `76.76.21.21`); use whatever the dashboard shows.
