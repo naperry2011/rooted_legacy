@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
-import { PW_RESET_COOKIE } from "@/lib/auth";
+import { PW_RESET_COOKIE, getCurrentRole } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -40,9 +40,15 @@ export async function signIn(
   const cookieStore = await cookies();
   cookieStore.delete(PW_RESET_COOKIE);
 
-  // Only allow local redirects (guard against open-redirect via ?next=).
+  // Honor an explicit local ?next=, else send admins to the dashboard and
+  // everyone else to their account.
   const next = parsed.data.next;
-  const dest =
-    next && next.startsWith("/") && !next.startsWith("//") ? next : "/account";
+  let dest: string;
+  if (next && next.startsWith("/") && !next.startsWith("//")) {
+    dest = next;
+  } else {
+    const role = await getCurrentRole();
+    dest = role === "admin" ? "/admin" : "/account";
+  }
   redirect(dest);
 }
