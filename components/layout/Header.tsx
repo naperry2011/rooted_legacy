@@ -88,6 +88,9 @@ export function Header() {
           )}
           {authed === true && (
             <>
+              <Link href="/admin" className={linkClass}>
+                Admin
+              </Link>
               <Link href="/account" className={linkClass}>
                 Account
               </Link>
@@ -159,6 +162,13 @@ export function Header() {
             <div className="mt-2 pt-2 border-t border-line flex flex-col">
               {authed ? (
                 <>
+                  <Link
+                    href="/admin"
+                    onClick={close}
+                    className="px-3 py-3 rounded-md text-ink hover:text-primary hover:bg-bg-elev transition-colors"
+                  >
+                    Admin
+                  </Link>
                   <Link
                     href="/account"
                     onClick={close}
