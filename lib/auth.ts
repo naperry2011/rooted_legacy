@@ -5,6 +5,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type Role = "visitor" | "staff" | "admin";
 
+/**
+ * Cookie set after a password-recovery link is verified. While present, the
+ * admin area redirects to /reset-password/update, forcing the user to set a new
+ * password before doing anything else. Cleared on save or normal login.
+ */
+export const PW_RESET_COOKIE = "pw_reset_pending";
+
 export async function getCurrentUser() {
   const supabase = await createServerClient();
   const {
